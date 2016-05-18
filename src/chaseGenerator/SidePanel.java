@@ -14,7 +14,7 @@ public class SidePanel extends JPanel {
 		this.removeAll();
 		int size = enviroment.fields.size();
 		this.setLayout(new GridLayout(size, 1));
-		for (FieldType2 ft2 : enviroment.fields) {
+		for (TerrainModel ft2 : enviroment.fields) {
 			JCheckBox cb = new JCheckBox(ft2.getName());
 			cb.setSelected(ft2.isChoosen());
 			this.add(cb);
