@@ -19,6 +19,7 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 
@@ -36,6 +37,7 @@ import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 import com.sun.xml.internal.ws.api.server.Container;
+import com.sun.xml.internal.ws.api.server.SDDocument;
 
 public class MainFrame {
 
@@ -111,11 +113,11 @@ public class MainFrame {
 
 		tabs = new JTabbedPane();
 
-		tabs.add(new TerrainConfig(new TerrainModel(),enviroment), "+");
+		// tabs.add(new TerrainConfig(new TerrainModel(),enviroment), "+");
 
 		fp = new FieldPanel();
 		frame = new JFrame();
-		frame.setBounds(100, 100, 450, 300);
+		frame.setBounds(100, 100, 800, 500);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		controls = new JPanel();
@@ -215,10 +217,15 @@ public class MainFrame {
 	private void createMenuBar() {
 		JMenuBar jmb = new JMenuBar();
 		JMenu mainMenu = new JMenu("Menu");
+		JMenu addMenu = new JMenu("add");
 		JMenu help = new JMenu("Help");
+
 		jmb.add(mainMenu);
+		jmb.add(addMenu);
 		jmb.add(help);
+
 		help.add(new JMenuItem("There is no help where you will go"));
+
 		JMenuItem jmi = new JMenuItem("Show Map");
 		mainMenu.add(jmi);
 		jmi.addActionListener(new ActionListener() {
@@ -247,6 +254,18 @@ public class MainFrame {
 		});
 		mainMenu.addSeparator();
 		mainMenu.add(jmi);
+
+		jmi = new JMenuItem("new Terrain");
+		jmi.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				addTerrain();
+
+			}
+		});
+		addMenu.add(jmi);
+
 		frame.setJMenuBar(jmb);
 	}
 
@@ -390,9 +409,41 @@ public class MainFrame {
 	private void initTabs() {
 		if (enviroment == null)
 			return;
-		for(TerrainModel tm : enviroment.fields)
-		{
-			tabs.add(tm.getName(),new TerrainConfig(tm,enviroment));
+		for (TerrainModel tm : enviroment.fields) {
+			tabs.add(tm.getName(), new TerrainConfig(tm, enviroment, this));
 		}
+	}
+
+	public void changeTabName(String name) {
+		System.out.println(tabs.getTitleAt(tabs.getSelectedIndex()));
+		tabs.setTitleAt(tabs.getSelectedIndex(), name);
+	}
+
+	public void deleteTab() {
+		String name = tabs.getTitleAt(tabs.getSelectedIndex());
+		tabs.remove(tabs.getSelectedIndex());
+		TerrainModel tmDel = null;
+		for (TerrainModel tm : enviroment.fields)
+			if (tm.getName().equals(name))
+				tmDel = tm;
+		if (tmDel != null)
+			enviroment.fields.remove(tmDel);
+		sp.setEnviroment(enviroment);
+		enviroment.update();
+	}
+
+	private void addTerrain() {
+		String showInputDialog = JOptionPane.showInputDialog("Please set the new Name" );
+		if (showInputDialog == null)
+			return;
+		System.out.println("Adding Terrain: "+showInputDialog);
+		TerrainModel tm = new TerrainModel();
+		tm.setChoosen(false);
+		tm.setName(showInputDialog);
+		enviroment.fields.add(tm);
+		tabs.add(showInputDialog, new TerrainConfig(tm, enviroment, this));
+		sp.setEnviroment(enviroment);
+		tabs.setSelectedIndex(tabs.getTabCount()-1);
+		enviroment.update();
 	}
 }

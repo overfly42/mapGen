@@ -15,5 +15,17 @@ public class EnvData {
 		fields = new ArrayList<>();
 
 	}
+	public void update()
+	{
+		for(TerrainModel tm : fields)
+			tm.update();
+	}
+	public TerrainModel getModel(String name)
+	{
+		for(TerrainModel tm : fields)
+			if(tm.getName().equals(name))
+				return tm;
+		return null;
+	}
 
 }

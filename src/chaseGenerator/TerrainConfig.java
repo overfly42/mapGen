@@ -4,6 +4,7 @@ import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.JPanel;
 import java.awt.GridBagLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import javax.swing.JTextField;
@@ -18,12 +19,22 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.BoxLayout;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import javax.swing.JButton;
 
 public class TerrainConfig extends JPanel {
 
 	private class Model extends DefaultTableModel {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = -8956798810392186233L;
 		private TerrainModel tm;
 
 		public Model(TerrainModel m) {
@@ -36,23 +47,53 @@ public class TerrainConfig extends JPanel {
 		}
 
 		public int getRowCount() {
-			return 2;
+			return otherTerrains.fields.size();
 
 		}
 
 		public Object getValueAt(int row, int col) {
-			switch (col) {
-			case 0:
-				return "N/A";
-			case 1:
-				return -1;
-			default:
-				return null;
+
+			int i = 0;
+			for (TerrainModel t : otherTerrains.fields) {
+				if (i < row) {
+					i++;
+					continue;
+				}
+				switch (col) {
+				case 0:
+					return t.getName();
+				case 1:
+
+					return tm.getPropability(t.getName());
+				default:
+					return null;
+				}
 			}
+			return null;
+		}
+
+		public void setValueAt(Object o, int row, int col) {
+			if (col != 1)
+				return;
+			String s = (String) getValueAt(row, 0);// Get the name
+			tm.setPropability(s, (int) o);
+		}
+
+		public boolean isCellEditable(int row, int column) {
+			if (column == 1)
+				return true;
+			return false;
 		}
 
 		public String getColumnName(int col) {
-			return col + "";
+			switch (col) {
+			case 0:
+				return "Name";
+			case 1:
+				return "Propability";
+			default:
+				return "N/A";
+			}
 
 		}
 
@@ -66,6 +107,10 @@ public class TerrainConfig extends JPanel {
 				return Object.class;
 			}
 		}
+
+		public void update() {
+			fireTableDataChanged();
+		}
 	}
 
 	/**
@@ -74,13 +119,18 @@ public class TerrainConfig extends JPanel {
 	private static final long serialVersionUID = 1499349776862563165L;
 
 	private TerrainModel model;
+	private Model tableModel;
 	private EnvData otherTerrains;
 	private JTable table;
 	private JTextField textField;
+	private MainFrame mf;
+	private JLabel lblC;
 
-	public TerrainConfig(TerrainModel terrainData, EnvData others) {
+	public TerrainConfig(TerrainModel terrainData, EnvData others, MainFrame mf) {
 		model = terrainData;
+		model.setTerrainConfig(this);
 		otherTerrains = others;
+		this.mf = mf;
 
 		JLabel lblName = new JLabel("Name");
 		lblName.setHorizontalAlignment(SwingConstants.LEFT);
@@ -89,9 +139,9 @@ public class TerrainConfig extends JPanel {
 		JLabel lblColor = new JLabel("Color");
 		lblColor.setBounds(0, 46, 37, 15);
 		lblColor.setHorizontalAlignment(SwingConstants.LEFT);
-		
-		JLabel lblH = new JLabel("          ");
-		lblH.addMouseListener(new MouseAdapter() {
+
+		lblC = new JLabel("          ");
+		lblC.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
 				chooseColor();
@@ -110,44 +160,76 @@ public class TerrainConfig extends JPanel {
 		JScrollPane scrollPane = new JScrollPane();
 		scrollPane.setLocation(0, 122);
 
+		tableModel = new Model(model);
 		table = new JTable();
-		table.setModel(new Model(model));
+		table.setModel(tableModel);
 		scrollPane.setViewportView(table);
 		scrollPane.setSize(new Dimension(340, 113));
-		
-		lblH.setOpaque(true);
-		lblH.setBackground(model.getColor());
-		lblH.setBounds(60, 46, 160, 15);
+
+		lblC.setOpaque(true);
+		lblC.setBackground(model.getColor());
+		lblC.setBounds(60, 46, 160, 15);
 		setLayout(null);
 		add(lblName);
 		add(lblColor);
-		add(lblH);
+		add(lblC);
 		add(lblStreet);
 		add(chckbxPossible);
 		add(chckbxCrossing);
 		add(scrollPane);
-		
-		textField = new JTextField();
-		textField.addKeyListener(new KeyAdapter() {
+
+		textField = new JTextField(model.getName());
+		textField.getDocument().addDocumentListener(new DocumentListener() {
+
 			@Override
-			public void keyTyped(KeyEvent arg0) {
-				nameChange(arg0);
+			public void removeUpdate(DocumentEvent e) {
+				nameChange();
+			}
+
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				nameChange();
+			}
+
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				nameChange();
 			}
 		});
 		textField.setBounds(58, 21, 114, 19);
 		add(textField);
 		textField.setColumns(10);
+
+		JButton btnDeleteThisTerrain = new JButton("Delete this Terrain");
+		btnDeleteThisTerrain.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				delete();
+			}
+		});
+		btnDeleteThisTerrain.setBounds(0, 241, 340, 25);
+		add(btnDeleteThisTerrain);
 	}
-	private void chooseColor()
-	{
+
+	public void upate() {
+		tableModel.update();
+	}
+
+	private void chooseColor() {
 		System.out.println("Choosing Color");
 		JColorChooser jcc = new JColorChooser(model.getColor());
-		jcc.showDialog(this, "Please Choose a Color for this Terrain", model.getColor());
-		
+		Color showDialog = JColorChooser.showDialog(this, "Please Choose a Color for this Terrain", model.getColor());
+		if (showDialog != null)
+			model.setColor(showDialog);
+		lblC.setBackground(model.getColor());
 	}
-	private void nameChange(KeyEvent ke)
-	{
-		System.out.println("Got Key");
+
+	private void nameChange() {
+		model.setName(textField.getText());
+		mf.changeTabName(textField.getText());
 	}
-	
+
+	private void delete() {
+		mf.deleteTab();
+	}
+
 }
