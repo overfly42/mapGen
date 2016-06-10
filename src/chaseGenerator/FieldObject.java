@@ -6,7 +6,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
 class FieldObject {
-	private FieldType area;
+	private TerrainModel area;
 	private TrapType trap;
 	@XmlElement
 	int survival;
@@ -15,11 +15,11 @@ class FieldObject {
 	@XmlElementWrapper
 	AbilitySG[][] nextField = new AbilitySG[4][2];
 
-	public FieldType getArea() {
+	public TerrainModel getArea() {
 		return area;
 	}
 
-	public void setArea(FieldType area) {
+	public void setArea(TerrainModel area) {
 		this.area = area;
 	}
 

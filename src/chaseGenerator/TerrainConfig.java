@@ -19,6 +19,8 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.BoxLayout;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -126,6 +128,10 @@ public class TerrainConfig extends JPanel {
 	private MainFrame mf;
 	private JLabel lblC;
 
+	private JCheckBox chckbxDestination;
+
+	private JCheckBox chckbxBorder;
+
 	public TerrainConfig(TerrainModel terrainData, EnvData others, MainFrame mf) {
 		model = terrainData;
 		model.setTerrainConfig(this);
@@ -158,7 +164,7 @@ public class TerrainConfig extends JPanel {
 		chckbxCrossing.setBounds(60, 92, 85, 23);
 
 		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setLocation(0, 122);
+		scrollPane.setLocation(0, 213);
 
 		tableModel = new Model(model);
 		table = new JTable();
@@ -206,8 +212,36 @@ public class TerrainConfig extends JPanel {
 				delete();
 			}
 		});
-		btnDeleteThisTerrain.setBounds(0, 241, 340, 25);
+		btnDeleteThisTerrain.setBounds(0, 338, 340, 25);
 		add(btnDeleteThisTerrain);
+
+		chckbxDestination = new JCheckBox("Destination");
+		chckbxDestination.setBounds(60, 121, 129, 23);
+		add(chckbxDestination);
+		chckbxDestination.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				destinationChanged(((JCheckBox) e.getSource()).isSelected());
+			}
+		});
+
+		JLabel lblSpecial = new JLabel("Special");
+		lblSpecial.setBounds(0, 123, 70, 15);
+
+		add(lblSpecial);
+
+		chckbxBorder = new JCheckBox("Border");
+		chckbxBorder.setBounds(60, 148, 129, 23);
+		add(chckbxBorder);
+		chckbxBorder.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				borderChanged(((JCheckBox) arg0.getSource()).isSelected());
+
+			}
+		});
 	}
 
 	public void upate() {
@@ -232,4 +266,32 @@ public class TerrainConfig extends JPanel {
 		mf.deleteTab();
 	}
 
+	private void borderChanged(boolean b) {
+		System.out.println("This is " + (b ? "" : "not ") + "the new border");
+		for(TerrainModel tm : otherTerrains.fields)
+		{
+			if(tm.getName().equals(model.getName()))
+				continue;
+			tm.setBorder(false);
+		}
+	}
+
+	private void destinationChanged(boolean b) {
+		System.out.println("This is " + (b ? "" : "not ") + "the new destination");
+		for(TerrainModel tm : otherTerrains.fields)
+		{
+			if(tm.getName().equals(model.getName()))
+				continue;
+			tm.setDestination(false);
+		}
+		model.setDestination(b);
+	}
+	public void unsetBorder()
+	{
+		chckbxBorder.setSelected(false);
+	}
+	public void unsetDestination()
+	{
+		chckbxDestination.setSelected(false);
+	}
 }

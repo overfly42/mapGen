@@ -1,24 +1,30 @@
 package chaseGenerator;
 
 import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.swing.JCheckBox;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
 /**
- * Configuration of a Single Terrain, e.g. Forest, or Hills
+ * Configuration of a Single Terrain, e.g. Forest, or Hills The ActionListener
+ * is for the SidePanel
  * 
  * @author christian
  *
  */
 @XmlRootElement
-public class TerrainModel {
+public class TerrainModel implements ActionListener {
 	private String name = null;
 	public Map<String, Integer> adjectionProbability;
 	private boolean choosen;
+	private boolean destination;
+	private boolean border;
 	private TerrainConfig terraConf = null;
 	@XmlElement
 	private int red = 0, blue = 0, green = 0;
@@ -106,9 +112,36 @@ public class TerrainModel {
 		return i;
 	}
 
+	@XmlTransient
 	public void setColor(Color c) {
 		red = c.getRed();
 		blue = c.getBlue();
 		green = c.getGreen();
+	}
+
+	public boolean isBorder() {
+		return border;
+	}
+
+	public void setBorder(boolean border) {
+		this.border = border;
+		if (terraConf != null)
+			terraConf.unsetBorder();
+	}
+
+	public boolean isDestination() {
+		return destination;
+	}
+
+	public void setDestination(boolean destination) {
+		this.destination = destination;
+		if (terraConf != null && !destination)
+			terraConf.unsetDestination();
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		setChoosen(((JCheckBox) e.getSource()).isSelected());
+
 	}
 }

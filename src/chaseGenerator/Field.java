@@ -24,5 +24,8 @@ public class Field {
 	public int getFields(){
 		return fields;
 	}
-
+	public void setFieldAt(FieldObject fo, int x,int y)
+	{
+		data[x][y] = fo;
+	}
 }
