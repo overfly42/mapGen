@@ -5,16 +5,22 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
+import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import javax.swing.Action;
+import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.KeyStroke;
 import javax.swing.ToolTipManager;
 
 public class FieldPanel extends JPanel implements ActionListener {
@@ -62,6 +68,54 @@ public class FieldPanel extends JPanel implements ActionListener {
 		ToolTipManager.sharedInstance().registerComponent(this);
 		ToolTipManager.sharedInstance().setInitialDelay(0);
 		this.setToolTipText("Hallo WElt");
+		this.getInputMap().put(KeyStroke.getKeyStroke('0'), "something");
+
+		this.getActionMap().put("something", new Action() {
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				System.out.println("iiii1");
+				System.out.println(arg0.getActionCommand());
+				System.out.println(arg0.getModifiers());
+
+			}
+
+			@Override
+			public void setEnabled(boolean b) {
+				System.out.println("iiii2");
+
+			}
+
+			@Override
+			public void removePropertyChangeListener(PropertyChangeListener listener) {
+				System.out.println("iiii3");
+
+			}
+
+			@Override
+			public void putValue(String key, Object value) {
+				System.out.println("iiii4");
+
+			}
+
+			@Override
+			public boolean isEnabled() {
+				System.out.println("iiii5");
+				return true;
+			}
+
+			@Override
+			public Object getValue(String key) {
+				System.out.println("iiii6");
+				return null;
+			}
+
+			@Override
+			public void addPropertyChangeListener(PropertyChangeListener listener) {
+				System.out.println("iiii7");
+
+			}
+		});
 
 	}
 
@@ -159,20 +213,35 @@ public class FieldPanel extends JPanel implements ActionListener {
 	public void click(MouseEvent e) {
 		int x = (e.getX() - xOff) / pxw;
 		int y = (e.getY() - yOff) / pxh;
-		// myPoint pos;
 		if (e.getButton() == MouseEvent.BUTTON1) {
-			// pos = myPos;
-			List<TerrainModel> ltm = getAllowedTerrains(x, y);
-			System.out.println("Allowed is : ");
-			for (TerrainModel tm : ltm)
-				System.out.println("\t" + tm.getName());
+			JPopupMenu jpm = new JPopupMenu();
+			JMenuItem jmi;
+			jmi = new JMenuItem("hunted");
+			jmi.addActionListener(new ActionListener() {
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					yourPos = new myPoint(x, y);
+			repaint();
+
+				}
+			});
+			jpm.add(jmi);
+			jmi = new JMenuItem("hunter");
+			jmi.addActionListener(new ActionListener() {
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					myPos = new myPoint(x, y);
+					repaint();
+
+				}
+			});
+			jpm.add(jmi);
+			jpm.show(this, e.getX(), e.getY());
 		} else {
-			// pos = yourPos;
 			fillSingleTerrainManuall(x, y, e.getX(), e.getY());
 		}
-
-		// pos.x = x;
-		// pos.y = y;
 
 		repaint();
 	}
@@ -357,8 +426,8 @@ public class FieldPanel extends JPanel implements ActionListener {
 	private void fillSingleTerrainManuall(int x, int y, int mouseX, int mouseY) {
 		JPopupMenu jpm = new JPopupMenu();
 		List<TerrainModel> ltm = getAllowedTerrains(x, y);
+		JMenu allowedTypes = new JMenu("Allowed Terrain types");
 		for (TerrainModel tm : ltm) {
-
 			JMenuItem jmi = new JMenuItem(tm.getName());
 			jmi.addActionListener(new ActionListener() {
 				TerrainModel save = tm;
@@ -366,14 +435,51 @@ public class FieldPanel extends JPanel implements ActionListener {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					data.get(x, y).setArea(save);
-					System.out.println(save.getName());
 					repaint();
 				}
 			});
-			jpm.add(jmi);
+			allowedTypes.add(jmi);
 		}
+		JMenu allTypes = new JMenu("All Terrain types");
+		for (TerrainModel tm : envoirment.fields) {
+			JMenuItem jmi = new JMenuItem(tm.getName());
+			jmi.addActionListener(new ActionListener() {
+				TerrainModel save = tm;
 
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					reorganize(x, y, save);
+					repaint();
+				}
+			});
+			allTypes.add(jmi);
+
+		}
+		jpm.add(allowedTypes);
+		jpm.add(allTypes);
 		jpm.show(this, mouseX, mouseY);
+	}
+
+	/**
+	 * Sets this filed to the given terrain model, and reorganizes all
+	 * surrouning fields
+	 * 
+	 * @param x
+	 * @param y
+	 * @param tm
+	 */
+	private void reorganize(int x, int y, TerrainModel tm) {
+		System.out.println("Reorganizing");
+		data.get(x, y).setArea(tm);
+		List<myPoint> points = checkField();
+		System.out.println("Number of Points not allowed " + points.size());
+		for (myPoint mp : points) {
+			System.out.println(mp.x + " " + mp.y);
+			if (mp.x == x && mp.y == y)
+				continue;
+			data.get(mp.x, mp.y).setArea(null);
+		}
+		fillEmptyTerrain();
 	}
 
 	/**
@@ -399,20 +505,10 @@ public class FieldPanel extends JPanel implements ActionListener {
 		}
 		// Remove Terrains not allowd by surrondings
 		List<TerrainModel> del = new ArrayList<>();
-		int X[] = new int[4];
-		int Y[] = new int[4];
-		// Manhatten Metrik
-		X[0] = x;
-		X[1] = x;
-		X[2] = x - 1;
-		X[3] = x + 1;
-		Y[0] = y + 1;
-		Y[1] = y - 1;
-		Y[2] = y;
-		Y[3] = y;
+
 		for (TerrainModel tm : res) {
 			for (int i = 0; i < 4; i++) {
-				TerrainModel tmp = data.get(X[i], Y[i]).getArea();
+				TerrainModel tmp = getArea(i, x, y);
 				if (tmp == null)
 					continue;
 				if (!tmp.isAdjectableTo(tm.getName()) && !tmp.isDestination())
@@ -693,46 +789,6 @@ public class FieldPanel extends JPanel implements ActionListener {
 			for (int n = 0; n < data.getFields(); n++)
 				data.get(i, n).perception = r.nextInt(10) + 5;
 	}
-
-	// private void setAbilitySkills() {
-	// int max = 5;
-	// AbilityType[] at = new AbilityType[max];
-	// at[0] = AbilityType.Akrobatik;
-	// at[1] = AbilityType.Heimlichkeit;
-	// at[2] = AbilityType.Klettern;
-	// at[3] = AbilityType.Entfesselungskunst;
-	// at[4] = AbilityType.Schwimmen;
-	// FieldType local;
-	// for (int i = 0; i < data.getFields(); i++)
-	// for (int n = 0; n < data.getFields(); n++) {
-	// local = data.get(i, n).getArea();
-	// // North
-	// for (int a = 0; a < 4; a++) {
-	// if (local == FieldType.Fluss)
-	// data.get(i, n).nextField[a][0] = new AbilitySG(AbilityType.Schwimmen, 10
-	// + r.nextInt(15));
-	// else if (local == FieldType.Unterholz || local == FieldType.Schlamm)
-	// data.get(i, n).nextField[a][0] = new
-	// AbilitySG(AbilityType.Entfesselungskunst,
-	// 10 + r.nextInt(15));
-	// else
-	// data.get(i, n).nextField[a][0] = new AbilitySG(at[r.nextInt(3)], 10 +
-	// r.nextInt(15));
-	//
-	// AbilityType atype;
-	// do {
-	// atype = at[r.nextInt(4)];
-	// } while (atype == data.get(i, n).nextField[a][0].type);
-	// data.get(i, n).nextField[a][1] = new AbilitySG(atype, 10 +
-	// r.nextInt(10));
-	// }
-	// // for (int j = 0; j < 4; j++)
-	// // for (int m = 0; m < 2; m++) {
-	// // data.get(i, n).nextField[j][m] = new
-	// // AbilitySG(at[r.nextInt(max)], 10 + r.nextInt(15));
-	// // }
-	// }
-	// }
 
 	private void setTraps() {
 		int max = 4;
