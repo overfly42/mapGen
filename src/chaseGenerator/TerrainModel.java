@@ -3,7 +3,10 @@ package chaseGenerator;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.swing.JCheckBox;
@@ -20,12 +23,33 @@ import javax.xml.bind.annotation.XmlTransient;
  */
 @XmlRootElement
 public class TerrainModel implements ActionListener {
+
+	private class AjectionPropability implements Comparable<AjectionPropability> {
+		public String name;
+		public int propability;
+
+		public AjectionPropability(String n, int p) {
+			name = n;
+			propability = p;
+		}
+
+		@Override
+		public int compareTo(AjectionPropability o) {
+
+			return o.propability - propability;
+		}
+	}
+
 	private String name = null;
 	public Map<String, Integer> adjectionProbability;
 	private boolean choosen;
+
 	private boolean destination;
+
 	private boolean border;
 	private TerrainConfig terraConf = null;
+
+	private int areas = 0;
 	@XmlElement
 	private int red = 0, blue = 0, green = 0;
 
@@ -112,6 +136,14 @@ public class TerrainModel implements ActionListener {
 		return i;
 	}
 
+	public int getAreas() {
+		return areas;
+	}
+
+	public void setAreas(int a) {
+		areas = a;
+	}
+
 	@XmlTransient
 	public void setColor(Color c) {
 		red = c.getRed();
@@ -125,7 +157,7 @@ public class TerrainModel implements ActionListener {
 
 	public void setBorder(boolean border) {
 		this.border = border;
-		if (terraConf != null)
+		if (terraConf != null && !border)
 			terraConf.unsetBorder();
 	}
 
@@ -133,7 +165,15 @@ public class TerrainModel implements ActionListener {
 		return destination;
 	}
 
+	public boolean isAdjectableTo(String s) {
+		for (String adjecting : adjectionProbability.keySet())
+			if (s.equals(adjecting)&&adjectionProbability.get(s)>0)
+				return true;
+		return false;
+	}
+
 	public void setDestination(boolean destination) {
+
 		this.destination = destination;
 		if (terraConf != null && !destination)
 			terraConf.unsetDestination();
@@ -143,5 +183,27 @@ public class TerrainModel implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 		setChoosen(((JCheckBox) e.getSource()).isSelected());
 
+	}
+
+	/**
+	 * 
+	 * @param percent
+	 *            value between 0 and 99 including to select next area
+	 * @return name of Area is selected
+	 */
+	public String getAreaNameOf(int percent) {
+		int p = 0;
+		List<AjectionPropability> elemtnes = new ArrayList<>();
+		for (String s : adjectionProbability.keySet()) {
+			elemtnes.add(new AjectionPropability(s, adjectionProbability.get(s)));
+
+		}
+		Collections.sort(elemtnes);
+		for (AjectionPropability ap : elemtnes) {
+			p += ap.propability;
+			if (p >= percent)
+				return ap.name;
+		}
+		return null;
 	}
 }

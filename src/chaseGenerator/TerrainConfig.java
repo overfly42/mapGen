@@ -29,6 +29,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import javax.swing.JButton;
+import javax.swing.JSpinner;
 
 public class TerrainConfig extends JPanel {
 
@@ -140,10 +141,10 @@ public class TerrainConfig extends JPanel {
 
 		JLabel lblName = new JLabel("Name");
 		lblName.setHorizontalAlignment(SwingConstants.LEFT);
-		lblName.setBounds(0, 23, 40, 15);
+		lblName.setBounds(12, 23, 40, 15);
 
 		JLabel lblColor = new JLabel("Color");
-		lblColor.setBounds(0, 46, 37, 15);
+		lblColor.setBounds(12, 46, 37, 15);
 		lblColor.setHorizontalAlignment(SwingConstants.LEFT);
 
 		lblC = new JLabel("          ");
@@ -155,13 +156,13 @@ public class TerrainConfig extends JPanel {
 		});
 
 		JLabel lblStreet = new JLabel("Street");
-		lblStreet.setBounds(0, 69, 45, 15);
+		lblStreet.setBounds(12, 73, 45, 15);
 
 		JCheckBox chckbxPossible = new JCheckBox("possible");
-		chckbxPossible.setBounds(60, 69, 85, 23);
+		chckbxPossible.setBounds(140, 71, 85, 23);
 
 		JCheckBox chckbxCrossing = new JCheckBox("crossing");
-		chckbxCrossing.setBounds(60, 92, 85, 23);
+		chckbxCrossing.setBounds(140, 94, 85, 23);
 
 		JScrollPane scrollPane = new JScrollPane();
 		scrollPane.setLocation(0, 213);
@@ -174,7 +175,7 @@ public class TerrainConfig extends JPanel {
 
 		lblC.setOpaque(true);
 		lblC.setBackground(model.getColor());
-		lblC.setBounds(60, 46, 160, 15);
+		lblC.setBounds(140, 46, 160, 15);
 		setLayout(null);
 		add(lblName);
 		add(lblColor);
@@ -202,7 +203,7 @@ public class TerrainConfig extends JPanel {
 				nameChange();
 			}
 		});
-		textField.setBounds(58, 21, 114, 19);
+		textField.setBounds(140, 21, 114, 19);
 		add(textField);
 		textField.setColumns(10);
 
@@ -216,7 +217,8 @@ public class TerrainConfig extends JPanel {
 		add(btnDeleteThisTerrain);
 
 		chckbxDestination = new JCheckBox("Destination");
-		chckbxDestination.setBounds(60, 121, 129, 23);
+		chckbxDestination.setBounds(140, 123, 129, 23);
+		chckbxDestination.setSelected(model.isDestination());
 		add(chckbxDestination);
 		chckbxDestination.addActionListener(new ActionListener() {
 
@@ -227,13 +229,40 @@ public class TerrainConfig extends JPanel {
 		});
 
 		JLabel lblSpecial = new JLabel("Special");
-		lblSpecial.setBounds(0, 123, 70, 15);
+		lblSpecial.setBounds(12, 127, 70, 15);
 
 		add(lblSpecial);
 
 		chckbxBorder = new JCheckBox("Border");
-		chckbxBorder.setBounds(60, 148, 129, 23);
+		chckbxBorder.setBounds(140, 150, 129, 23);
+		chckbxBorder.setSelected(model.isBorder());
 		add(chckbxBorder);
+
+		JLabel lblNoOfAreas = new JLabel("No. of Areas");
+		lblNoOfAreas.setBounds(12, 168, 105, 15);
+		add(lblNoOfAreas);
+
+		JLabel lblMeansAny = new JLabel("0 means any");
+		lblMeansAny.setBounds(12, 186, 105, 15);
+		add(lblMeansAny);
+
+		JSpinner spinner = new JSpinner();
+		spinner.setBounds(140, 181, 114, 20);
+		spinner.setValue(model.getAreas());
+		spinner.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				int i = (int) spinner.getValue();
+				if (i < 0) {
+					i = 0;
+					spinner.setValue(i);
+				}
+				setOccurences(i);
+
+			}
+		});
+		add(spinner);
 		chckbxBorder.addActionListener(new ActionListener() {
 
 			@Override
@@ -268,30 +297,34 @@ public class TerrainConfig extends JPanel {
 
 	private void borderChanged(boolean b) {
 		System.out.println("This is " + (b ? "" : "not ") + "the new border");
-		for(TerrainModel tm : otherTerrains.fields)
-		{
-			if(tm.getName().equals(model.getName()))
+		for (TerrainModel tm : otherTerrains.fields) {
+			if (tm.getName().equals(model.getName()))
 				continue;
 			tm.setBorder(false);
 		}
+		model.setBorder(b);
 	}
 
 	private void destinationChanged(boolean b) {
 		System.out.println("This is " + (b ? "" : "not ") + "the new destination");
-		for(TerrainModel tm : otherTerrains.fields)
-		{
-			if(tm.getName().equals(model.getName()))
+		for (TerrainModel tm : otherTerrains.fields) {
+			if (tm.getName().equals(model.getName()))
 				continue;
 			tm.setDestination(false);
 		}
 		model.setDestination(b);
 	}
-	public void unsetBorder()
-	{
+
+	public void unsetBorder() {
 		chckbxBorder.setSelected(false);
 	}
-	public void unsetDestination()
-	{
+
+	public void unsetDestination() {
 		chckbxDestination.setSelected(false);
 	}
+
+	private void setOccurences(int n) {
+		model.setAreas(n);
+	}
+
 }

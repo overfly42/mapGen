@@ -6,11 +6,15 @@ import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.ToolTipManager;
 
 public class FieldPanel extends JPanel implements ActionListener {
@@ -35,6 +39,14 @@ public class FieldPanel extends JPanel implements ActionListener {
 	private class myPoint {
 		int x = 7;
 		int y = 0;
+
+		public myPoint() {
+		};
+
+		public myPoint(int X, int Y) {
+			x = X;
+			y = Y;
+		}
 	}
 
 	public FieldPanel() {
@@ -113,19 +125,27 @@ public class FieldPanel extends JPanel implements ActionListener {
 			return str;
 		if (fo.getArea() == null)
 			return str;
-		str += "<br>" + "Gelände: " + fo.getArea().toString();
-		str += "<br>" + "Überlebenskunst(mod): " + fo.survival;
-		str += "<br>" + "Wahrnehmung(mod): " + fo.perception;
-		str += "<br>" + "Norden (SG " + fo.nextField[NORTH][0].sg + "): " + fo.nextField[NORTH][0].type.toString();
-		str += "<br>" + "       (SG " + fo.nextField[NORTH][1].sg + "): " + fo.nextField[NORTH][1].type.toString();
-		str += "<br>" + "Osten (SG " + fo.nextField[EAST][0].sg + "): " + fo.nextField[EAST][0].type.toString();
-		str += "<br>" + "       (SG " + fo.nextField[EAST][1].sg + "): " + fo.nextField[EAST][1].type.toString();
-		str += "<br>" + "Süden (SG " + fo.nextField[SOUTH][0].sg + "): " + fo.nextField[SOUTH][0].type.toString();
-		str += "<br>" + "       (SG " + fo.nextField[SOUTH][1].sg + "): " + fo.nextField[SOUTH][1].type.toString();
-		str += "<br>" + "Westen (SG " + fo.nextField[WEST][0].sg + "): " + fo.nextField[WEST][0].type.toString();
-		str += "<br>" + "       (SG " + fo.nextField[WEST][1].sg + "): " + fo.nextField[WEST][1].type.toString();
-		if (fo.getTrap() != null)
-			str += "<br>" + "Falle: " + fo.getTrap().toString();
+		str += "<br>" + "Gelände: " + fo.getArea().getName();
+		// str += "<br>" + "Überlebenskunst(mod): " + fo.survival;
+		// str += "<br>" + "Wahrnehmung(mod): " + fo.perception;
+		// str += "<br>" + "Norden (SG " + fo.nextField[NORTH][0].sg + "): " +
+		// fo.nextField[NORTH][0].type.toString();
+		// str += "<br>" + " (SG " + fo.nextField[NORTH][1].sg + "): " +
+		// fo.nextField[NORTH][1].type.toString();
+		// str += "<br>" + "Osten (SG " + fo.nextField[EAST][0].sg + "): " +
+		// fo.nextField[EAST][0].type.toString();
+		// str += "<br>" + " (SG " + fo.nextField[EAST][1].sg + "): " +
+		// fo.nextField[EAST][1].type.toString();
+		// str += "<br>" + "Süden (SG " + fo.nextField[SOUTH][0].sg + "): " +
+		// fo.nextField[SOUTH][0].type.toString();
+		// str += "<br>" + " (SG " + fo.nextField[SOUTH][1].sg + "): " +
+		// fo.nextField[SOUTH][1].type.toString();
+		// str += "<br>" + "Westen (SG " + fo.nextField[WEST][0].sg + "): " +
+		// fo.nextField[WEST][0].type.toString();
+		// str += "<br>" + " (SG " + fo.nextField[WEST][1].sg + "): " +
+		// fo.nextField[WEST][1].type.toString();
+		// if (fo.getTrap() != null)
+		// str += "<br>" + "Falle: " + fo.getTrap().toString();
 		// "<html>X: " + xPos + "<br> Y: " + yPos+"</html>";
 		return "<html>" + str + "</html>";
 
@@ -139,25 +159,33 @@ public class FieldPanel extends JPanel implements ActionListener {
 	public void click(MouseEvent e) {
 		int x = (e.getX() - xOff) / pxw;
 		int y = (e.getY() - yOff) / pxh;
-		myPoint pos;
-		if (e.getButton() == MouseEvent.BUTTON1)
-			pos = myPos;
-		else
-			pos = yourPos;
+		// myPoint pos;
+		if (e.getButton() == MouseEvent.BUTTON1) {
+			// pos = myPos;
+			List<TerrainModel> ltm = getAllowedTerrains(x, y);
+			System.out.println("Allowed is : ");
+			for (TerrainModel tm : ltm)
+				System.out.println("\t" + tm.getName());
+		} else {
+			// pos = yourPos;
+			fillSingleTerrainManuall(x, y, e.getX(), e.getY());
+		}
 
-		pos.x = x;
-		pos.y = y;
-		System.out.println("CLick" + x + " " + y);
+		// pos.x = x;
+		// pos.y = y;
+
 		repaint();
 	}
 
 	private void generateTerrain() {
 		initData();
+		placeBorder();
 		placeDestination();
-		// placeBoarder();
-		// placeRiver();
+		placeSpecial();
+		fillEmptyTerrain();
+		cleanUnallowedFields();
 		// fillEmptyTerrain();
-		// fillRemainingWhitheSpace();
+		// cleanUnallowedFields(checkField());
 		setSurvilvalSklills();
 		setPerceptionSkills();
 		// setAbilitySkills();
@@ -172,22 +200,228 @@ public class FieldPanel extends JPanel implements ActionListener {
 	private void placeDestination() {
 		TerrainModel tm = null;
 		for (TerrainModel t : envoirment.fields) {
-			System.out.println(t.getName() + " " + t.isChoosen() + " " + t.isDestination());
 			if (t.isChoosen() && t.isDestination())
 				tm = t;
 		}
 		if (tm == null)
 			return;
 		int size = data.getFields();
-		int x = r.nextInt(size / 2) + size / 4;
-		int y = r.nextInt(size / 2) + size / 4;
-		System.out.println("Setting dest to " + x + " " + y);
 		FieldObject fo = new FieldObject();
-		fo.setArea(tm);
-		data.setFieldAt(fo, x, y);
+		int n = Math.max(1, tm.getAreas());
+
+		while (n > 0) {
+			int x = r.nextInt(size / 2) + size / 4;
+			int y = r.nextInt(size / 2) + size / 4;
+			System.out.println("Setting dest to " + x + " " + y);
+			fo.setArea(tm);
+			if (data.get(x, y).getArea() != null)
+				continue;
+			data.setFieldAt(fo, x, y);
+			n--;
+		}
 
 	}
 
+	private void placeBorder() {
+		TerrainModel tm = null;
+		for (TerrainModel t : envoirment.fields)
+			if (t.isBorder())
+				tm = t;
+		if (tm == null)
+			return;
+		int max = data.getFields();
+		for (int i = 0; i < max; i++) {
+			FieldObject fo = new FieldObject();
+			fo.setArea(tm);
+			data.setFieldAt(fo, max - 1, i);
+			data.setFieldAt(fo, 0, i);
+			data.setFieldAt(fo, i, 0);
+			data.setFieldAt(fo, i, max - 1);
+		}
+	}
+
+	private void placeSpecial() {
+		List<TerrainModel> ltm = new ArrayList<>();
+		for (TerrainModel tm : envoirment.fields)
+			if (tm.getAreas() > 0 && !tm.isDestination())
+				ltm.add(tm);
+		int size = data.getFields();
+		for (TerrainModel tm : ltm) {
+			int max = tm.getAreas();
+			int n = 0;
+			while (n++ < max) {
+				int x = r.nextInt(size - 2) + 1;// Do not choose the border
+				int y = r.nextInt(size - 2) + 1;
+				if (data.get(x, y).getArea() != null)
+					continue;
+				insertSpecialRegion(tm, tm, x, y);
+			}
+		}
+	}
+
+	/**
+	 * inserts a region of the given Terrain including its borders
+	 * 
+	 * @param tm
+	 * @param x
+	 * @param y
+	 */
+	private void insertSpecialRegion(TerrainModel org, TerrainModel tm, int x, int y) {
+		if (!tm.isChoosen())
+			return;
+		data.get(x, y).setArea(tm);
+		if (org != tm)
+			return;
+		int X[] = new int[4];
+		int Y[] = new int[4];
+		// Manhatten Metrik
+		X[0] = x;
+		X[1] = x;
+		X[2] = x - 1;
+		X[3] = x + 1;
+		Y[0] = y + 1;
+		Y[1] = y - 1;
+		Y[2] = y;
+		Y[3] = y;
+		for (int i = 0; i < 4; i++) {
+			if (data.get(X[i], Y[i]).getArea() != null)
+				continue;
+			String nextTerrain = org.getAreaNameOf(r.nextInt(100));// 100 %
+
+			if (nextTerrain == null)
+				continue;
+			insertSpecialRegion(org, envoirment.getModel(nextTerrain), X[i], Y[i]);
+		}
+	}
+
+	/**
+	 * 
+	 * @return a List of Fields that do not pass the surronings check
+	 */
+	private List<myPoint> checkField() {
+		List<myPoint> l = new ArrayList<>();
+		int max = data.getFields() - 1;
+		for (int x = 1; x < max; x++)
+			for (int y = 1; y < max; y++)
+				if (!checkField(x, y))
+					l.add(new myPoint(x, y));
+		return l;
+	}
+
+	private boolean checkField(int x, int y) {
+		TerrainModel tm = data.get(x, y).getArea();
+		if (tm == null || tm.isDestination())
+			return true;
+		TerrainModel[] adjected = new TerrainModel[4];
+		adjected[0] = data.get(x + 1, y).getArea();
+		adjected[1] = data.get(x - 1, y).getArea();
+		adjected[2] = data.get(x, y + 1).getArea();
+		adjected[3] = data.get(x, y - 1).getArea();
+		for (TerrainModel adj : adjected) {
+			if (adj == null || adj.isDestination())
+				continue;
+			if (adj.isAdjectableTo(tm.getName()) && tm.isAdjectableTo(adj.getName()))
+				continue;
+			return false;
+		}
+		return true;
+	}
+
+	private void cleanUnallowedFields() {
+		List<myPoint> lmp = checkField();
+		for (myPoint mp : lmp) {
+			List<TerrainModel> at = getAllowedTerrains(mp.x, mp.y);
+			if (at.size() > 0)
+				data.get(mp.x, mp.y).setArea(at.get(r.nextInt(at.size())));
+			else
+				data.get(mp.x, mp.y).setArea(null);
+		}
+	}
+
+	private void fillEmptyTerrain() {
+
+		int max = data.getFields() - 1;
+		for (int x = 1; x < max; x++) {
+			for (int y = 1; y < max; y++)
+				if (data.get(x, y).getArea() == null) {
+					List<TerrainModel> allowed = getAllowedTerrains(x, y);
+
+					if (allowed.isEmpty())
+						continue;
+					TerrainModel tm = allowed.get(r.nextInt(allowed.size()));
+					data.get(x, y).setArea(tm);
+				}
+		}
+	}
+
+	private void fillSingleTerrainManuall(int x, int y, int mouseX, int mouseY) {
+		JPopupMenu jpm = new JPopupMenu();
+		List<TerrainModel> ltm = getAllowedTerrains(x, y);
+		for (TerrainModel tm : ltm) {
+
+			JMenuItem jmi = new JMenuItem(tm.getName());
+			jmi.addActionListener(new ActionListener() {
+				TerrainModel save = tm;
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					data.get(x, y).setArea(save);
+					System.out.println(save.getName());
+					repaint();
+				}
+			});
+			jpm.add(jmi);
+		}
+
+		jpm.show(this, mouseX, mouseY);
+	}
+
+	/**
+	 * Caclulates all Terrais that are allowed (at the moment) for this
+	 * coordinates
+	 * 
+	 * @param x
+	 * @param y
+	 * @return
+	 */
+	private List<TerrainModel> getAllowedTerrains(int x, int y) {
+		List<TerrainModel> res = new ArrayList<>();
+		if (x < 1 || y < 1 || x > data.getFields() - 1 || y > data.getFields() - 1)
+			return res;
+		// Adding all possible Terrais to a list
+		for (TerrainModel tm : envoirment.fields) {
+			if (tm.isDestination())
+				continue;
+			if (tm.getAreas() > 0)
+				continue;
+			if (tm.isChoosen())
+				res.add(tm);
+		}
+		// Remove Terrains not allowd by surrondings
+		List<TerrainModel> del = new ArrayList<>();
+		int X[] = new int[4];
+		int Y[] = new int[4];
+		// Manhatten Metrik
+		X[0] = x;
+		X[1] = x;
+		X[2] = x - 1;
+		X[3] = x + 1;
+		Y[0] = y + 1;
+		Y[1] = y - 1;
+		Y[2] = y;
+		Y[3] = y;
+		for (TerrainModel tm : res) {
+			for (int i = 0; i < 4; i++) {
+				TerrainModel tmp = data.get(X[i], Y[i]).getArea();
+				if (tmp == null)
+					continue;
+				if (!tmp.isAdjectableTo(tm.getName()) && !tmp.isDestination())
+					del.add(tm);
+			}
+		}
+		res.removeAll(del);
+		return res;
+	}
 	// private void placeDestination() {
 	//// int halfField = data.getFields() / 2;
 	//// int x = halfField + r.nextInt(halfField);
