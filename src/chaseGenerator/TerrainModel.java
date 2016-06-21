@@ -112,7 +112,8 @@ public class TerrainModel implements ActionListener {
 		int max = names.length;
 		int step = getWholePropability() > 100 ? -1 : 1;
 		int steps = 0;
-		while (getWholePropability() != 100 && steps++ < 100) {
+		int maxStep = 100 * names.length;
+		while (getWholePropability() != 100 && steps++ < maxStep) {
 			pos = (pos + 1) % max;
 			int val = getPropability(names[pos]) + step;
 			if (val < 0 || val > 100)

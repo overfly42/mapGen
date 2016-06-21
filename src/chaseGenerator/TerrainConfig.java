@@ -138,6 +138,7 @@ public class TerrainConfig extends JPanel {
 		model.setTerrainConfig(this);
 		otherTerrains = others;
 		this.mf = mf;
+		this.setPreferredSize(new Dimension(500, 500));
 
 		JLabel lblName = new JLabel("Name");
 		lblName.setHorizontalAlignment(SwingConstants.LEFT);
@@ -250,13 +251,12 @@ public class TerrainConfig extends JPanel {
 		spinner.setBounds(140, 181, 114, 20);
 		spinner.setValue(model.getAreas());
 		spinner.addChangeListener(new ChangeListener() {
-
 			@Override
 			public void stateChanged(ChangeEvent e) {
-				int i = (int) spinner.getValue();
+				int i = (int) ((JSpinner)e.getSource()).getValue();
 				if (i < 0) {
 					i = 0;
-					spinner.setValue(i);
+					((JSpinner)e.getSource()).setValue(i);
 				}
 				setOccurences(i);
 

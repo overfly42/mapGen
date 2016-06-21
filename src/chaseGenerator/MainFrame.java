@@ -1,6 +1,7 @@
 package chaseGenerator;
 
 import java.awt.EventQueue;
+import java.awt.ScrollPane;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -27,6 +28,7 @@ import java.awt.BorderLayout;
 import java.awt.CardLayout;
 
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.SingleSelectionModel;
@@ -43,11 +45,10 @@ public class MainFrame {
 
 	private static final String MAP = "map";
 	private static final String FIELD_CONFIG = "f_config";
+	private static final String CONFIG = "cfg";
 
 	// Gui
 	private JFrame frame;
-	private FieldPanel fp;
-	private SidePanel sp;
 	private JPanel controls;
 	private JPanel container;
 	private JTabbedPane tabs;
@@ -58,8 +59,14 @@ public class MainFrame {
 	private JFileChooser fc;
 	private CardLayout layout;
 
+	// GUI - customized
+	private SidePanel sp;
+	private Config cfg;
+
 	// Inteligence - Basic Terrain types
 	private EnvData enviroment;
+	private AllDataTable allData;
+	private FieldPanel fp;
 
 	/**
 	 * Launch the application.
@@ -81,6 +88,7 @@ public class MainFrame {
 	 * Create the application.
 	 */
 	public MainFrame() {
+		loadElements();
 		initialize();
 		fc = new JFileChooser();
 		fc.addChoosableFileFilter(new FileFilter() {
@@ -98,7 +106,7 @@ public class MainFrame {
 				return arg0.getName().endsWith(".data");
 			}
 		});
-		loadElements();
+		allData = new AllDataTable(enviroment);
 		initTabs();
 	}
 
@@ -113,18 +121,20 @@ public class MainFrame {
 
 		tabs = new JTabbedPane();
 
-		// tabs.add(new TerrainConfig(new TerrainModel(),enviroment), "+");
-
 		fp = new FieldPanel();
 		frame = new JFrame();
 		frame.setBounds(100, 100, 800, 500);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		fp.setEnv(enviroment);
 
 		controls = new JPanel();
 		frame.getContentPane().add(controls, BorderLayout.SOUTH);
 
 		sp = new SidePanel();
 		frame.getContentPane().add(sp, BorderLayout.EAST);
+		sp.setEnviroment(enviroment);
+
+		cfg = new Config(fp.getData(), enviroment);
 
 		btnLoad = new JButton("load");
 		controls.add(btnLoad);
@@ -209,6 +219,7 @@ public class MainFrame {
 
 		container.add(fp, MAP);
 		container.add(tabs, FIELD_CONFIG);
+		container.add(cfg, CONFIG);
 		frame.getContentPane().add(container, BorderLayout.CENTER);
 		frame.setTitle("World Generator");
 		createMenuBar();
@@ -240,6 +251,16 @@ public class MainFrame {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				showTab(FIELD_CONFIG);
+
+			}
+		});
+		mainMenu.add(jmi);
+		jmi = new JMenuItem("Config");
+		jmi.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				showTab(CONFIG);
 
 			}
 		});
@@ -388,8 +409,6 @@ public class MainFrame {
 			Unmarshaller u = c.createUnmarshaller();
 			FileInputStream fis = new FileInputStream(new File("env.data"));
 			enviroment = (EnvData) u.unmarshal(fis);
-			fp.setEnv(enviroment);
-			sp.setEnviroment(enviroment);
 			fis.close();
 		} catch (JAXBException e) {
 			// TODO Auto-generated catch block
@@ -410,12 +429,18 @@ public class MainFrame {
 		if (enviroment == null)
 			return;
 		for (TerrainModel tm : enviroment.fields) {
-			tabs.add(tm.getName(), new TerrainConfig(tm, enviroment, this));
+			ScrollPane sp = new ScrollPane();
+			sp.add(new TerrainConfig(tm, enviroment, this));
+			tabs.add(tm.getName(), sp);
 		}
+		JTable jt = new JTable(allData);
+		jt.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+		tabs.add("All Terrains", new JScrollPane(jt));
+
 	}
 
 	public void changeTabName(String name) {
-		System.out.println(tabs.getTitleAt(tabs.getSelectedIndex()));
+
 		tabs.setTitleAt(tabs.getSelectedIndex(), name);
 	}
 
@@ -433,17 +458,19 @@ public class MainFrame {
 	}
 
 	private void addTerrain() {
-		String showInputDialog = JOptionPane.showInputDialog("Please set the new Name" );
+		String showInputDialog = JOptionPane.showInputDialog("Please set the new Name");
 		if (showInputDialog == null)
 			return;
-		System.out.println("Adding Terrain: "+showInputDialog);
+		System.out.println("Adding Terrain: " + showInputDialog);
 		TerrainModel tm = new TerrainModel();
 		tm.setChoosen(false);
 		tm.setName(showInputDialog);
 		enviroment.fields.add(tm);
-		tabs.add(showInputDialog, new TerrainConfig(tm, enviroment, this));
-		sp.setEnviroment(enviroment);
-		tabs.setSelectedIndex(tabs.getTabCount()-1);
+		ScrollPane sp = new ScrollPane();
+		sp.add(new TerrainConfig(tm, enviroment, this));
+		tabs.add(showInputDialog, sp);
+		this.sp.setEnviroment(enviroment);
+		tabs.setSelectedIndex(tabs.getTabCount() - 1);
 		enviroment.update();
 	}
 }

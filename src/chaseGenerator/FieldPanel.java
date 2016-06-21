@@ -41,6 +41,7 @@ public class FieldPanel extends JPanel implements ActionListener {
 	private myPoint myPos;
 	private myPoint yourPos;
 	private EnvData envoirment;
+	private SidePanel sp;
 
 	private class myPoint {
 		int x = 7;
@@ -63,7 +64,6 @@ public class FieldPanel extends JPanel implements ActionListener {
 		data = new Field();
 		myPos = new myPoint();
 		yourPos = new myPoint();
-		initData();
 
 		ToolTipManager.sharedInstance().registerComponent(this);
 		ToolTipManager.sharedInstance().setInitialDelay(0);
@@ -211,18 +211,18 @@ public class FieldPanel extends JPanel implements ActionListener {
 	}
 
 	public void click(MouseEvent e) {
-		int x = (e.getX() - xOff) / pxw;
-		int y = (e.getY() - yOff) / pxh;
+		final int x = (e.getX() - xOff) / pxw;
+		final int y = (e.getY() - yOff) / pxh;
 		if (e.getButton() == MouseEvent.BUTTON1) {
 			JPopupMenu jpm = new JPopupMenu();
 			JMenuItem jmi;
 			jmi = new JMenuItem("hunted");
+			myPoint p = new myPoint(x, y);
 			jmi.addActionListener(new ActionListener() {
-
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					yourPos = new myPoint(x, y);
-			repaint();
+					repaint();
 
 				}
 			});
@@ -247,7 +247,7 @@ public class FieldPanel extends JPanel implements ActionListener {
 	}
 
 	private void generateTerrain() {
-		initData();
+		data.reCreateField(data.getFields());
 		placeBorder();
 		placeDestination();
 		placeSpecial();
@@ -262,10 +262,6 @@ public class FieldPanel extends JPanel implements ActionListener {
 		repaint();
 	}
 
-	private void initData() {
-		data.reCreateField(30);
-	}
-
 	private void placeDestination() {
 		TerrainModel tm = null;
 		for (TerrainModel t : envoirment.fields) {
@@ -277,8 +273,8 @@ public class FieldPanel extends JPanel implements ActionListener {
 		int size = data.getFields();
 		FieldObject fo = new FieldObject();
 		int n = Math.max(1, tm.getAreas());
-
-		while (n > 0) {
+		int trys = 0;
+		while (n > 0 && trys++ < 100) {
 			int x = r.nextInt(size / 2) + size / 4;
 			int y = r.nextInt(size / 2) + size / 4;
 			System.out.println("Setting dest to " + x + " " + y);
@@ -418,16 +414,17 @@ public class FieldPanel extends JPanel implements ActionListener {
 					if (allowed.isEmpty())
 						continue;
 					TerrainModel tm = allowed.get(r.nextInt(allowed.size()));
+
 					data.get(x, y).setArea(tm);
 				}
 		}
 	}
 
-	private void fillSingleTerrainManuall(int x, int y, int mouseX, int mouseY) {
+	private void fillSingleTerrainManuall(final int x, final int y, int mouseX, int mouseY) {
 		JPopupMenu jpm = new JPopupMenu();
 		List<TerrainModel> ltm = getAllowedTerrains(x, y);
 		JMenu allowedTypes = new JMenu("Allowed Terrain types");
-		for (TerrainModel tm : ltm) {
+		for (final TerrainModel tm : ltm) {
 			JMenuItem jmi = new JMenuItem(tm.getName());
 			jmi.addActionListener(new ActionListener() {
 				TerrainModel save = tm;
@@ -441,7 +438,7 @@ public class FieldPanel extends JPanel implements ActionListener {
 			allowedTypes.add(jmi);
 		}
 		JMenu allTypes = new JMenu("All Terrain types");
-		for (TerrainModel tm : envoirment.fields) {
+		for (final TerrainModel tm : envoirment.fields) {
 			JMenuItem jmi = new JMenuItem(tm.getName());
 			jmi.addActionListener(new ActionListener() {
 				TerrainModel save = tm;
