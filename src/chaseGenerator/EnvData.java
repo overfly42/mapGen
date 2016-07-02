@@ -11,8 +11,11 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class EnvData {
 	@XmlElement
 	List<TerrainModel> fields;
+	@XmlElement
+	List<ObjectModel> objects;
 	public EnvData() {
 		fields = new ArrayList<>();
+		objects = new ArrayList<>();
 
 	}
 
@@ -27,19 +30,4 @@ public class EnvData {
 				return tm;
 		return null;
 	}
-
-//	public int getMaxAbilityNumber() {
-//		return getMaxXNumber(abilitys);
-//	}
-//
-//	public int getMaxTrapNumber() {
-//		return getMaxXNumber(traps);
-//	}
-//
-//	private int getMaxXNumber(Map<String, List<String>> msls) {
-//		int max = 0;
-//		for (String s : msls.keySet())
-//			max = Math.max(max, msls.get(s).size());
-//		return max;
-//	}
 }

@@ -288,7 +288,7 @@ public class TerrainConfig extends JPanel {
 
 	private void nameChange() {
 		model.setName(textField.getText());
-		mf.changeTabName(textField.getText());
+		mf.changeTerrainTabName(textField.getText());
 	}
 
 	private void delete() {

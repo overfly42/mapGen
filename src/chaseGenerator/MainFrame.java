@@ -46,12 +46,14 @@ public class MainFrame {
 	private static final String MAP = "map";
 	private static final String FIELD_CONFIG = "f_config";
 	private static final String CONFIG = "cfg";
+	private static final String OBJ_CONFIG = "o_config";
 
 	// Gui
 	private JFrame frame;
 	private JPanel controls;
 	private JPanel container;
-	private JTabbedPane tabs;
+	private JTabbedPane tabTerrain;
+	private JTabbedPane tabObjects;
 	private JButton btnLoad;
 	private JButton btnSave;
 	private JButton btnSaveEnv;
@@ -119,7 +121,8 @@ public class MainFrame {
 		container = new JPanel();
 		container.setLayout(layout);
 
-		tabs = new JTabbedPane();
+		tabTerrain = new JTabbedPane();
+		tabObjects = new JTabbedPane();
 
 		fp = new FieldPanel();
 		frame = new JFrame();
@@ -218,8 +221,9 @@ public class MainFrame {
 		});
 
 		container.add(fp, MAP);
-		container.add(tabs, FIELD_CONFIG);
+		container.add(tabTerrain, FIELD_CONFIG);
 		container.add(cfg, CONFIG);
+		container.add(tabObjects, OBJ_CONFIG);
 		frame.getContentPane().add(container, BorderLayout.CENTER);
 		frame.setTitle("World Generator");
 		createMenuBar();
@@ -255,6 +259,16 @@ public class MainFrame {
 			}
 		});
 		mainMenu.add(jmi);
+		jmi = new JMenuItem("Show Field Objects");
+		jmi.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				showTab(OBJ_CONFIG);
+
+			}
+		});
+		mainMenu.add(jmi);
 		jmi = new JMenuItem("Config");
 		jmi.addActionListener(new ActionListener() {
 
@@ -286,7 +300,16 @@ public class MainFrame {
 			}
 		});
 		addMenu.add(jmi);
+		jmi = new JMenuItem("new Field Object");
+		jmi.addActionListener(new ActionListener() {
 
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				addObject();
+
+			}
+		});
+		addMenu.add(jmi);
 		frame.setJMenuBar(jmb);
 	}
 
@@ -428,25 +451,36 @@ public class MainFrame {
 	private void initTabs() {
 		if (enviroment == null)
 			return;
+		// Terrains
 		for (TerrainModel tm : enviroment.fields) {
 			ScrollPane sp = new ScrollPane();
 			sp.add(new TerrainConfig(tm, enviroment, this));
-			tabs.add(tm.getName(), sp);
+			tabTerrain.add(tm.getName(), sp);
 		}
 		JTable jt = new JTable(allData);
 		jt.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-		tabs.add("All Terrains", new JScrollPane(jt));
-
+		tabTerrain.add("All Terrains", new JScrollPane(jt));
+		// Objects
+		for (ObjectModel om : enviroment.objects) {
+			ScrollPane sp = new ScrollPane();
+			sp.add(new ObjectConfig(om,enviroment,this));
+			tabObjects.add(om.getName(), sp);
+		}
 	}
 
-	public void changeTabName(String name) {
+	public void changeTerrainTabName(String name) {
 
-		tabs.setTitleAt(tabs.getSelectedIndex(), name);
+		tabTerrain.setTitleAt(tabTerrain.getSelectedIndex(), name);
+	}
+	
+	public void changeObjectTabName(String name)
+	{
+		tabObjects.setTitleAt(tabObjects.getSelectedIndex(), name);
 	}
 
 	public void deleteTab() {
-		String name = tabs.getTitleAt(tabs.getSelectedIndex());
-		tabs.remove(tabs.getSelectedIndex());
+		String name = tabTerrain.getTitleAt(tabTerrain.getSelectedIndex());
+		tabTerrain.remove(tabTerrain.getSelectedIndex());
 		TerrainModel tmDel = null;
 		for (TerrainModel tm : enviroment.fields)
 			if (tm.getName().equals(name))
@@ -468,9 +502,26 @@ public class MainFrame {
 		enviroment.fields.add(tm);
 		ScrollPane sp = new ScrollPane();
 		sp.add(new TerrainConfig(tm, enviroment, this));
-		tabs.add(showInputDialog, sp);
+		tabTerrain.add(showInputDialog, sp);
 		this.sp.setEnviroment(enviroment);
-		tabs.setSelectedIndex(tabs.getTabCount() - 1);
+		tabTerrain.setSelectedIndex(tabTerrain.getTabCount() - 1);
 		enviroment.update();
+	}
+
+	private void addObject() {
+		String showInputDialog = JOptionPane.showInputDialog("Please set the new Name");
+		if (showInputDialog == null)
+			return;
+		System.out.println("Adding Object: " + showInputDialog);
+		ObjectModel om = new ObjectModel();
+		om.setChoosen(false);
+		om.setName(showInputDialog);
+		enviroment.objects.add(om);
+		ScrollPane sp = new ScrollPane();
+		sp.add(new ObjectConfig(om, enviroment, this));
+		tabObjects.add(showInputDialog, sp);
+		this.sp.setEnviroment(enviroment);
+		tabObjects.setSelectedComponent(sp);
+
 	}
 }

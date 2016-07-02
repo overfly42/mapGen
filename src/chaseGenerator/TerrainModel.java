@@ -22,7 +22,7 @@ import javax.xml.bind.annotation.XmlTransient;
  *
  */
 @XmlRootElement
-public class TerrainModel implements ActionListener {
+public class TerrainModel extends BaseModel {
 
 	private class AjectionPropability implements Comparable<AjectionPropability> {
 		public String name;
@@ -40,9 +40,7 @@ public class TerrainModel implements ActionListener {
 		}
 	}
 
-	private String name = null;
 	public Map<String, Integer> adjectionProbability;
-	private boolean choosen;
 
 	private boolean destination;
 
@@ -54,30 +52,12 @@ public class TerrainModel implements ActionListener {
 	private int red = 0, blue = 0, green = 0;
 
 	public TerrainModel() {
-		if (name != null)
-			System.out.println(name);
-		name = "default";
 		red = Color.RED.getRed();
 		blue = Color.RED.getBlue();
 		green = Color.RED.getGreen();
 		adjectionProbability = new HashMap<>();
 	}
 
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String str) {
-		name = str;
-	}
-
-	public boolean isChoosen() {
-		return choosen;
-	}
-
-	public void setChoosen(boolean b) {
-		choosen = b;
-	}
 
 	public Color getColor() {
 		return new Color(red, green, blue);
@@ -180,11 +160,7 @@ public class TerrainModel implements ActionListener {
 			terraConf.unsetDestination();
 	}
 
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		setChoosen(((JCheckBox) e.getSource()).isSelected());
 
-	}
 
 	/**
 	 * 

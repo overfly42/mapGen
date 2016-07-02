@@ -11,7 +11,7 @@ public class Field {
 	@XmlElement
 	private FieldObject[][] data;
 	@XmlElement
-	private int fields = 4;
+	private int fields = 25;
 	@XmlElement
 	private Map<String, Integer> overall;
 
