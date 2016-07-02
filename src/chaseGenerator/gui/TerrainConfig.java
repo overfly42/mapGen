@@ -1,4 +1,4 @@
-package chaseGenerator;
+package chaseGenerator.gui;
 
 import javax.swing.JLabel;
 import javax.swing.JTable;
@@ -16,6 +16,10 @@ import javax.swing.JCheckBox;
 import javax.swing.JColorChooser;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
+
+import chaseGenerator.data.EnvData;
+import chaseGenerator.models.TerrainModel;
+
 import javax.swing.BoxLayout;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;

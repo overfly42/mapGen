@@ -1,4 +1,4 @@
-package chaseGenerator;
+package chaseGenerator.models;
 
 import java.awt.Color;
 import java.awt.event.ActionEvent;
@@ -13,6 +13,8 @@ import javax.swing.JCheckBox;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
+
+import chaseGenerator.gui.TerrainConfig;
 
 /**
  * Configuration of a Single Terrain, e.g. Forest, or Hills The ActionListener

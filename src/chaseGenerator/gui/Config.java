@@ -1,4 +1,4 @@
-package chaseGenerator;
+package chaseGenerator.gui;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -10,6 +10,9 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.table.AbstractTableModel;
 
+import chaseGenerator.data.EnvData;
+import chaseGenerator.data.Field;
+import chaseGenerator.models.TerrainModel;
 import interfaces.UpdateListener;
 
 public class Config extends JPanel {

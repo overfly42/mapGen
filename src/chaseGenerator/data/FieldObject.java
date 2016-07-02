@@ -1,19 +1,24 @@
-package chaseGenerator;
+package chaseGenerator.data;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import chaseGenerator.AbilitySG;
+import chaseGenerator.TrapType;
+import chaseGenerator.models.TerrainModel;
+
 @XmlRootElement
+public
 class FieldObject {
 	private TerrainModel area;
 	private TrapType trap;
 	@XmlElement
-	int survival;
+	public int survival;
 	@XmlElement
-	int perception;
+	public	int perception;
 	@XmlElementWrapper
-	AbilitySG[][] nextField = new AbilitySG[4][2];
+	public	AbilitySG[][] nextField = new AbilitySG[4][2];
 
 	public TerrainModel getArea() {
 		return area;

@@ -1,5 +1,5 @@
 package chaseGenerator;
-
-enum TrapType {
+@Deprecated
+public enum TrapType {
 	Loch, Speere,Schlinge,Leer
 }

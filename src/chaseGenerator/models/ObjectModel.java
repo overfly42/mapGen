@@ -1,10 +1,12 @@
-package chaseGenerator;
+package chaseGenerator.models;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+
+import chaseGenerator.ObjectType;
 
 @XmlRootElement
 public class ObjectModel extends BaseModel {

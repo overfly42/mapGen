@@ -1,4 +1,4 @@
-package chaseGenerator;
+package chaseGenerator.gui;
 
 import java.awt.Color;
 import java.awt.ScrollPane;
@@ -13,6 +13,10 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+
+import chaseGenerator.ObjectType;
+import chaseGenerator.data.EnvData;
+import chaseGenerator.models.ObjectModel;
 
 public class ObjectConfig extends JPanel {
 	private ObjectModel data;
@@ -63,8 +67,8 @@ public class ObjectConfig extends JPanel {
 		objectTypeBox.addItem(ObjectType.Location);
 		objectTypeBox.addItem(ObjectType.Trap);
 		objectTypeBox.addItem(ObjectType.Person);
-		if (data.ot != null)
-			objectTypeBox.setSelectedItem(data.ot);
+		if (data.getType() != null)
+			objectTypeBox.setSelectedItem(data.getType());
 		objectTypeBox.setBounds(80, 40, 300, 25);
 		objectTypeBox.addActionListener(new ActionListener() {
 

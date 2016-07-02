@@ -1,5 +1,5 @@
 package chaseGenerator;
-
-enum AbilityType {
+@Deprecated
+public enum AbilityType {
 	Akrobatik, Klettern, Heimlichkeit, Entfesselungskunst,Schwimmen
 }

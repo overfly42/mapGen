@@ -1,4 +1,4 @@
-package chaseGenerator;
+package chaseGenerator.gui;
 
 import java.awt.Dimension;
 import java.awt.GridLayout;
@@ -9,6 +9,10 @@ import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+
+import chaseGenerator.data.EnvData;
+import chaseGenerator.models.ObjectModel;
+import chaseGenerator.models.TerrainModel;
 
 public class SidePanel extends JPanel {
 	EnvData enviroment;

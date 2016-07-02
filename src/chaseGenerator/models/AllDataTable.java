@@ -1,8 +1,9 @@
-package chaseGenerator;
+package chaseGenerator.models;
 
 
 import javax.swing.table.AbstractTableModel;
 
+import chaseGenerator.data.EnvData;
 import interfaces.UpdateListener;
 
 public class AllDataTable extends AbstractTableModel implements UpdateListener {

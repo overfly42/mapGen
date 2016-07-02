@@ -1,4 +1,4 @@
-package chaseGenerator;
+package chaseGenerator.data;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,12 +7,15 @@ import java.util.Map;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import chaseGenerator.models.ObjectModel;
+import chaseGenerator.models.TerrainModel;
+
 @XmlRootElement
 public class EnvData {
 	@XmlElement
-	List<TerrainModel> fields;
+	public	List<TerrainModel> fields;
 	@XmlElement
-	List<ObjectModel> objects;
+	public	List<ObjectModel> objects;
 	public EnvData() {
 		fields = new ArrayList<>();
 		objects = new ArrayList<>();

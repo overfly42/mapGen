@@ -1,4 +1,4 @@
-package chaseGenerator;
+package chaseGenerator.gui;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -22,6 +22,12 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.KeyStroke;
 import javax.swing.ToolTipManager;
+
+import chaseGenerator.TrapType;
+import chaseGenerator.data.EnvData;
+import chaseGenerator.data.Field;
+import chaseGenerator.data.FieldObject;
+import chaseGenerator.models.TerrainModel;
 
 public class FieldPanel extends JPanel implements ActionListener {
 

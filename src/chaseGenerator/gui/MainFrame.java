@@ -1,4 +1,4 @@
-package chaseGenerator;
+package chaseGenerator.gui;
 
 import java.awt.EventQueue;
 import java.awt.ScrollPane;
@@ -40,6 +40,13 @@ import javax.xml.bind.Unmarshaller;
 
 import com.sun.xml.internal.ws.api.server.Container;
 import com.sun.xml.internal.ws.api.server.SDDocument;
+
+import chaseGenerator.data.EnvData;
+import chaseGenerator.data.Field;
+import chaseGenerator.data.FieldObject;
+import chaseGenerator.models.AllDataTable;
+import chaseGenerator.models.ObjectModel;
+import chaseGenerator.models.TerrainModel;
 
 public class MainFrame {
 

@@ -1,4 +1,4 @@
-package chaseGenerator;
+package chaseGenerator.data;
 
 import java.util.HashMap;
 import java.util.Map;
