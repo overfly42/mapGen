@@ -105,7 +105,6 @@ public class ObjectConfig extends JPanel {
 			}
 		});
 		descArea.setOpaque(true);
-		descArea.setBackground(Color.CYAN);
 		ScrollPane sp = new ScrollPane();
 		sp.add(descArea);
 		sp.setBounds(80, 65, 300, 150);

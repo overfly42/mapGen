@@ -1,5 +1,13 @@
 package chaseGenerator.gui;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -13,15 +21,18 @@ import javax.swing.table.AbstractTableModel;
 import chaseGenerator.data.EnvData;
 import chaseGenerator.data.Field;
 import chaseGenerator.models.TerrainModel;
-import interfaces.UpdateListener;
 
 public class Config extends JPanel {
 
-	public class DataModel extends AbstractTableModel implements UpdateListener {
+	public class DataModelTerrain extends AbstractTableModel {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = -5790514913004661459L;
 		private EnvData data;
 		private Field field;
 
-		public DataModel(EnvData ed, Field f) {
+		public DataModelTerrain(EnvData ed, Field f) {
 			data = ed;
 			field = f;
 		}
@@ -94,11 +105,14 @@ public class Config extends JPanel {
 		}
 	}
 
+	private static final long serialVersionUID = 2254113164657570921L;
 	// GUI
 	JSpinner fieldCount;
+	JTable terrainDist;
 	// Custom
 	Field data;
 	EnvData env;
+	DataModelTerrain dtm;
 
 	public Config(Field field, EnvData enviroment) {
 		data = field;
@@ -131,9 +145,22 @@ public class Config extends JPanel {
 		l2.setBounds(0, 20, 200, 20);
 		this.add(l2);
 
-		JScrollPane sp = new JScrollPane(new JTable(new DataModel(env, data)));
+		dtm = new DataModelTerrain(env, data);
+		terrainDist = new JTable(dtm);
+		JScrollPane sp = new JScrollPane(terrainDist);
 		sp.setBounds(200, 20, 300, 200);
 		this.add(sp);
+
+		JButton btn = new JButton("Generate new Distribution");
+		btn.setBounds(200, 220, 300, 20);
+		btn.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				generateNewDistribution();
+			}
+		});
+		this.add(btn);
 
 	}
 
@@ -141,4 +168,39 @@ public class Config extends JPanel {
 		data.reCreateField((Integer) fieldCount.getValue());
 	}
 
+	private void generateNewDistribution() {
+		int fs = env.fields.size();
+		Map<String, Integer> dist = new HashMap<>();// Store for new
+													// Distribution
+		String n;// Name of the Field to manipulate
+		Random r = new Random();
+		// Randomly set increase part of every terrain until 100%
+		while (getMapSum(dist) < 100) {
+			n = env.fields.get(r.nextInt(fs)).getName();
+			if (!env.getModel(n).isChoosen()) {
+				dist.put(n, 0);
+				continue;
+			}
+			Integer i = dist.get(n);
+			if (i == null)
+				i = 0;
+			i++;
+			dist.put(n, i);
+		}
+		// Save new distribution
+		for (String s : dist.keySet()) {
+			data.forcePercentage(s, dist.get(s));
+
+		}
+		dtm.fireTableDataChanged();
+	}
+
+	private int getMapSum(Map<String, Integer> msi) {
+		int value = 0;
+
+		for (String s : msi.keySet())
+			value += msi.get(s);
+
+		return value;
+	}
 }

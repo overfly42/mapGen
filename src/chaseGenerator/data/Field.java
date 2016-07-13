@@ -8,10 +8,13 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
 public class Field {
+	//The single Elements of the whole field
 	@XmlElement
 	private FieldObject[][] data;
+	//Size of the field in x and y direction
 	@XmlElement
 	private int fields = 25;
+	//Percentage distribution to all terrains
 	@XmlElement
 	private Map<String, Integer> overall;
 
@@ -49,6 +52,11 @@ public class Field {
 		return 0;
 	}
 
+	/**
+	 * Sets the given percentage and takes care that the sum of all values is exact 100
+	 * @param key Name of the terrain
+	 * @param val percentage for this terrain
+	 */
 	public void setPercentage(String key, int val) {
 		if (val < 0)
 			val = 0;
@@ -71,6 +79,19 @@ public class Field {
 			value = Math.min(value, 100);
 			overall.put(keys[pos], value);
 		}
+	}
+
+	/**
+	 * Sets the Percentage to the given value, it will be checked if the percentage is between 0 and 100 but there is no 
+	 * check of overall percentage
+	 * @param key
+	 * @param val
+	 */
+	public void forcePercentage(String key,int val)
+	{
+		if(val < 0)val = 0;
+		if(val > 100) val = 100;
+		overall.put(key, val);
 	}
 
 	private int getOverallPercentage() {

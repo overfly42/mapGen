@@ -38,6 +38,7 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
+import com.sun.activation.registries.MailcapFile;
 import com.sun.xml.internal.ws.api.server.Container;
 import com.sun.xml.internal.ws.api.server.SDDocument;
 
@@ -61,11 +62,8 @@ public class MainFrame {
 	private JPanel container;
 	private JTabbedPane tabTerrain;
 	private JTabbedPane tabObjects;
-	private JButton btnLoad;
-	private JButton btnSave;
-	private JButton btnSaveEnv;
-	private JButton btnPrint;
-	private JFileChooser fc;
+	private JFileChooser mapFile;
+	private JFileChooser envFile;
 	private CardLayout layout;
 
 	// GUI - customized
@@ -77,6 +75,7 @@ public class MainFrame {
 	private AllDataTable allData;
 	private FieldPanel fp;
 
+	// Startup
 	/**
 	 * Launch the application.
 	 */
@@ -97,24 +96,9 @@ public class MainFrame {
 	 * Create the application.
 	 */
 	public MainFrame() {
+		createFileChoosers();
 		loadElements();
 		initialize();
-		fc = new JFileChooser();
-		fc.addChoosableFileFilter(new FileFilter() {
-
-			@Override
-			public String getDescription() {
-
-				return "*.data";
-			}
-
-			@Override
-			public boolean accept(File arg0) {
-				if (arg0.isDirectory())
-					return true;
-				return arg0.getName().endsWith(".data");
-			}
-		});
 		allData = new AllDataTable(enviroment);
 		initTabs();
 	}
@@ -146,52 +130,27 @@ public class MainFrame {
 
 		cfg = new Config(fp.getData(), enviroment);
 
-		btnLoad = new JButton("load");
-		controls.add(btnLoad);
-		btnLoad.addActionListener(new ActionListener() {
+		JButton generateRandom = new JButton("generate random Terrain");
+		generateRandom.addActionListener(new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				load();
+				fp.generateRandomTerrain();
 
 			}
-
 		});
+		controls.add(generateRandom);
 
-		btnSave = new JButton("save");
-		controls.add(btnSave);
-		btnSave.addActionListener(new ActionListener() {
+		JButton generateConfig = new JButton("generate Terrain from Config");
+		generateConfig.addActionListener(new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				save();
-
-			}
-
-		});
-
-		btnSaveEnv = new JButton("save terrain types");
-		controls.add(btnSaveEnv);
-		btnSaveEnv.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				saveElements();
+				fp.generateConfigTerrain();
 
 			}
 		});
-
-		JButton generate = new JButton("generate Terrain");
-		controls.add(generate);
-
-		btnPrint = new JButton("print");
-		btnPrint.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				print();
-			}
-		});
-		controls.add(btnPrint);
-		generate.addActionListener(fp);
+		controls.add(generateConfig);
 
 		fp.setBounds(0, 0, fp.getPreferredSize().height, fp.getPreferredSize().width);
 		fp.addMouseListener(new MouseListener() {
@@ -234,22 +193,51 @@ public class MainFrame {
 		frame.getContentPane().add(container, BorderLayout.CENTER);
 		frame.setTitle("World Generator");
 		createMenuBar();
+
+	}
+
+	private void createFileChoosers() {
+		mapFile = new JFileChooser(".");
+		mapFile.setSelectedFile(new File("field.data"));
+		mapFile.addChoosableFileFilter(new FileFilter() {
+
+			@Override
+			public String getDescription() {
+
+				return "*.dat (XML - Format)";
+			}
+
+			@Override
+			public boolean accept(File arg0) {
+				if (arg0.getAbsolutePath().endsWith(".data"))
+					return true;
+				if (arg0.isDirectory())
+					return true;
+				return false;
+			}
+		});
+		envFile = new JFileChooser(".");
+		envFile.setSelectedFile(new File("env.data"));
+		envFile.addChoosableFileFilter(mapFile.getChoosableFileFilters()[0]);
 	}
 
 	private void createMenuBar() {
 		JMenuBar jmb = new JMenuBar();
-		JMenu mainMenu = new JMenu("Menu");
+		JMenu fileMenu = new JMenu("File");
+		JMenu viewMenu = new JMenu("View");
 		JMenu addMenu = new JMenu("add");
 		JMenu help = new JMenu("Help");
 
-		jmb.add(mainMenu);
+		jmb.add(fileMenu);
+		jmb.add(viewMenu);
 		jmb.add(addMenu);
 		jmb.add(help);
 
 		help.add(new JMenuItem("There is no help where you will go"));
 
+		///////////////////// View//////////////////////////
 		JMenuItem jmi = new JMenuItem("Show Map");
-		mainMenu.add(jmi);
+		viewMenu.add(jmi);
 		jmi.addActionListener(new ActionListener() {
 
 			@Override
@@ -265,7 +253,7 @@ public class MainFrame {
 
 			}
 		});
-		mainMenu.add(jmi);
+		viewMenu.add(jmi);
 		jmi = new JMenuItem("Show Field Objects");
 		jmi.addActionListener(new ActionListener() {
 
@@ -275,7 +263,7 @@ public class MainFrame {
 
 			}
 		});
-		mainMenu.add(jmi);
+		viewMenu.add(jmi);
 		jmi = new JMenuItem("Config");
 		jmi.addActionListener(new ActionListener() {
 
@@ -285,7 +273,72 @@ public class MainFrame {
 
 			}
 		});
-		mainMenu.add(jmi);
+		viewMenu.add(jmi);
+		///////////////////// File//////////////////////////
+		jmi = new JMenuItem("Load Map");
+		jmi.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int ua = mapFile.showOpenDialog(frame);
+				if (ua == JFileChooser.CANCEL_OPTION)
+					return;
+
+				load();
+
+			}
+		});
+		fileMenu.add(jmi);
+		jmi = new JMenuItem("Save Map");
+		jmi.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int showSaveDialog = mapFile.showSaveDialog(frame);
+				if (showSaveDialog == JFileChooser.CANCEL_OPTION)
+					return;
+				save();
+
+			}
+		});
+		fileMenu.add(jmi);
+		jmi = new JMenuItem("Print");
+		jmi.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+				print();
+
+			}
+		});
+		fileMenu.add(jmi);
+		fileMenu.addSeparator();
+		jmi = new JMenuItem("Load Terrain Config");
+		jmi.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int userInput = envFile.showOpenDialog(frame);
+				if (userInput == JFileChooser.CANCEL_OPTION)
+					return;
+				loadElements();
+			}
+		});
+		fileMenu.add(jmi);
+		jmi = new JMenuItem("Save Terrain Config");
+		jmi.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int userInput = envFile.showSaveDialog(frame);
+				if (userInput == JFileChooser.CANCEL_OPTION)
+					return;
+
+				saveElements();
+
+			}
+		});
+		fileMenu.add(jmi);
 		jmi = new JMenuItem("Exit");
 		jmi.addActionListener(new ActionListener() {
 			@Override
@@ -294,9 +347,9 @@ public class MainFrame {
 
 			}
 		});
-		mainMenu.addSeparator();
-		mainMenu.add(jmi);
-
+		fileMenu.addSeparator();
+		fileMenu.add(jmi);
+		///////////////////// add///////////////////////////
 		jmi = new JMenuItem("new Terrain");
 		jmi.addActionListener(new ActionListener() {
 
@@ -320,20 +373,16 @@ public class MainFrame {
 		frame.setJMenuBar(jmb);
 	}
 
-	private void showTab(String tap) {
-		layout.show(container, tap);
-	}
-
+	// Load and Save
 	private void exit() {
 
 		frame.dispose();
 	}
 
 	private void load() {
-		fc.showOpenDialog(frame);
 
-		File f = fc.getSelectedFile();
-		if (fc == null)
+		File f = mapFile.getSelectedFile();
+		if (mapFile == null)
 			return;
 		JAXBContext c;
 		try {
@@ -361,7 +410,9 @@ public class MainFrame {
 			JAXBContext c = JAXBContext.newInstance(Field.class);
 			Marshaller m = c.createMarshaller();
 			m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-			FileOutputStream fos = new FileOutputStream(new File("field.data"));
+			// FileOutputStream fos = new FileOutputStream(new
+			// File("field.data"));
+			FileOutputStream fos = new FileOutputStream(mapFile.getSelectedFile());
 			m.marshal(fp.getData(), fos);
 			fos.close();
 		} catch (JAXBException e) {
@@ -417,7 +468,7 @@ public class MainFrame {
 			JAXBContext c = JAXBContext.newInstance(EnvData.class);
 			Marshaller m = c.createMarshaller();
 			m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-			FileOutputStream fos = new FileOutputStream(new File("env.data"));
+			FileOutputStream fos = new FileOutputStream(envFile.getSelectedFile());
 			m.marshal(enviroment, fos);
 			fos.close();
 		} catch (JAXBException e) {
@@ -437,7 +488,7 @@ public class MainFrame {
 		try {
 			c = JAXBContext.newInstance(EnvData.class);
 			Unmarshaller u = c.createUnmarshaller();
-			FileInputStream fis = new FileInputStream(new File("env.data"));
+			FileInputStream fis = new FileInputStream(envFile.getSelectedFile());
 			enviroment = (EnvData) u.unmarshal(fis);
 			fis.close();
 		} catch (JAXBException e) {
@@ -470,18 +521,22 @@ public class MainFrame {
 		// Objects
 		for (ObjectModel om : enviroment.objects) {
 			ScrollPane sp = new ScrollPane();
-			sp.add(new ObjectConfig(om,enviroment,this));
+			sp.add(new ObjectConfig(om, enviroment, this));
 			tabObjects.add(om.getName(), sp);
 		}
+	}
+
+	// Tab usages
+	private void showTab(String tap) {
+		layout.show(container, tap);
 	}
 
 	public void changeTerrainTabName(String name) {
 
 		tabTerrain.setTitleAt(tabTerrain.getSelectedIndex(), name);
 	}
-	
-	public void changeObjectTabName(String name)
-	{
+
+	public void changeObjectTabName(String name) {
 		tabObjects.setTitleAt(tabObjects.getSelectedIndex(), name);
 	}
 
@@ -497,6 +552,8 @@ public class MainFrame {
 		sp.setEnviroment(enviroment);
 		enviroment.update();
 	}
+
+	// Adding ...
 
 	private void addTerrain() {
 		String showInputDialog = JOptionPane.showInputDialog("Please set the new Name");

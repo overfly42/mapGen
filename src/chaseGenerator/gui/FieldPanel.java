@@ -27,9 +27,10 @@ import chaseGenerator.TrapType;
 import chaseGenerator.data.EnvData;
 import chaseGenerator.data.Field;
 import chaseGenerator.data.FieldObject;
+import chaseGenerator.models.ObjectModel;
 import chaseGenerator.models.TerrainModel;
 
-public class FieldPanel extends JPanel implements ActionListener {
+public class FieldPanel extends JPanel {
 
 	/**
 	 * 
@@ -73,55 +74,6 @@ public class FieldPanel extends JPanel implements ActionListener {
 
 		ToolTipManager.sharedInstance().registerComponent(this);
 		ToolTipManager.sharedInstance().setInitialDelay(0);
-		this.setToolTipText("Hallo WElt");
-		this.getInputMap().put(KeyStroke.getKeyStroke('0'), "something");
-
-		this.getActionMap().put("something", new Action() {
-
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				System.out.println("iiii1");
-				System.out.println(arg0.getActionCommand());
-				System.out.println(arg0.getModifiers());
-
-			}
-
-			@Override
-			public void setEnabled(boolean b) {
-				System.out.println("iiii2");
-
-			}
-
-			@Override
-			public void removePropertyChangeListener(PropertyChangeListener listener) {
-				System.out.println("iiii3");
-
-			}
-
-			@Override
-			public void putValue(String key, Object value) {
-				System.out.println("iiii4");
-
-			}
-
-			@Override
-			public boolean isEnabled() {
-				System.out.println("iiii5");
-				return true;
-			}
-
-			@Override
-			public Object getValue(String key) {
-				System.out.println("iiii6");
-				return null;
-			}
-
-			@Override
-			public void addPropertyChangeListener(PropertyChangeListener listener) {
-				System.out.println("iiii7");
-
-			}
-		});
 
 	}
 
@@ -159,13 +111,21 @@ public class FieldPanel extends JPanel implements ActionListener {
 					if (c != null)
 						g.setColor(c);
 				}
+				// choose color for hunter and hunted
 				if (i == myPos.x && n == myPos.y)
 					g.setColor(Color.CYAN);
 				else if (i == yourPos.x && n == yourPos.y)
 					g.setColor(Color.WHITE);
+				// Paint actual Area
 				g.fillRect(xOff + pxw * i, yOff + pxh * n, pxw, pxh);
 				g.setColor(Color.BLACK);
 				g.drawRect(xOff + pxw * i, yOff + pxh * n, pxw, pxh);
+				// Paint indication if Objects exist
+				if (data.get(i, n).hasObjects()) {
+					g.setColor(ft.getInverseColor());
+					g.drawLine(xOff + pxw * i, yOff + pxh * n, xOff + pxw * (i + 1), yOff + pxh * (n + 1));
+					g.drawLine(xOff + pxw * (i + 1), yOff + pxh * n, xOff + pxw * i, yOff + pxh * (n + 1));
+				}
 			}
 	}
 
@@ -186,34 +146,11 @@ public class FieldPanel extends JPanel implements ActionListener {
 		if (fo.getArea() == null)
 			return str;
 		str += "<br>" + "Gelände: " + fo.getArea().getName();
-		// str += "<br>" + "Überlebenskunst(mod): " + fo.survival;
-		// str += "<br>" + "Wahrnehmung(mod): " + fo.perception;
-		// str += "<br>" + "Norden (SG " + fo.nextField[NORTH][0].sg + "): " +
-		// fo.nextField[NORTH][0].type.toString();
-		// str += "<br>" + " (SG " + fo.nextField[NORTH][1].sg + "): " +
-		// fo.nextField[NORTH][1].type.toString();
-		// str += "<br>" + "Osten (SG " + fo.nextField[EAST][0].sg + "): " +
-		// fo.nextField[EAST][0].type.toString();
-		// str += "<br>" + " (SG " + fo.nextField[EAST][1].sg + "): " +
-		// fo.nextField[EAST][1].type.toString();
-		// str += "<br>" + "Süden (SG " + fo.nextField[SOUTH][0].sg + "): " +
-		// fo.nextField[SOUTH][0].type.toString();
-		// str += "<br>" + " (SG " + fo.nextField[SOUTH][1].sg + "): " +
-		// fo.nextField[SOUTH][1].type.toString();
-		// str += "<br>" + "Westen (SG " + fo.nextField[WEST][0].sg + "): " +
-		// fo.nextField[WEST][0].type.toString();
-		// str += "<br>" + " (SG " + fo.nextField[WEST][1].sg + "): " +
-		// fo.nextField[WEST][1].type.toString();
-		// if (fo.getTrap() != null)
-		// str += "<br>" + "Falle: " + fo.getTrap().toString();
-		// "<html>X: " + xPos + "<br> Y: " + yPos+"</html>";
+		for (String s : fo.objects) {
+			str += "<br>" + s;
+		}
 		return "<html>" + str + "</html>";
 
-	}
-
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		generateTerrain();
 	}
 
 	public void click(MouseEvent e) {
@@ -252,7 +189,11 @@ public class FieldPanel extends JPanel implements ActionListener {
 		repaint();
 	}
 
-	private void generateTerrain() {
+	/**
+	 * Creates a randomly generated field Elements are choosen with respect
+	 * config from the terrain view
+	 */
+	public void generateRandomTerrain() {
 		data.reCreateField(data.getFields());
 		placeBorder();
 		placeDestination();
@@ -265,6 +206,51 @@ public class FieldPanel extends JPanel implements ActionListener {
 		setPerceptionSkills();
 		// setAbilitySkills();
 		setTraps();
+		repaint();
+	}
+
+	/**
+	 * Creates a nearly randomy created field Number of Elements of each type a
+	 * determined by the config view Also this method takes care to not void the
+	 * contraints from the terrain view
+	 */
+	public void generateConfigTerrain() {
+		data.reCreateField(data.getFields());
+		placeBorder();
+		placeSpecial();
+		// Get allready used elements
+		Map<String, Integer> used = new HashMap<>();
+		for (int i = 0; i < data.getFields(); i++)
+			for (int n = 0; n < data.getFields(); n++) {
+				TerrainModel tm = data.get(i, n).getArea();
+				if (tm == null)
+					continue;
+				Integer val = used.get(tm.getName());
+				if (val == null)
+					val = 0;
+				val++;
+				used.put(tm.getName(), val);
+			}
+		// Generate a List of all usable Terrains
+		List<TerrainModel> ltm = new ArrayList<>();
+		for (TerrainModel tm : envoirment.fields) {
+			String s = tm.getName();// TerrainModel to Insert
+			int amount = data.getNumberOfFields(s);// Number of Areas of this
+													// type
+			Integer allreadyInserted = used.get(s);// Get Number of allready
+													// inserted elements
+			if (allreadyInserted == null) // Care for valid data
+				allreadyInserted = 0;
+			amount = Math.max(0, amount - allreadyInserted);// reduce the number
+															// of Elements to
+															// insert, but be
+															// positive
+			for (int i = 0; i < amount; i++)
+				ltm.add(tm);
+
+		}
+
+		fillEmptyTerrain(ltm);
 		repaint();
 	}
 
@@ -426,6 +412,52 @@ public class FieldPanel extends JPanel implements ActionListener {
 		}
 	}
 
+	private void fillEmptyTerrain(List<TerrainModel> ltm) {
+		Random r = new Random();
+		boolean mapNotFilled = true;
+		int runs = 0;
+		int maxRuns = data.getFields() * data.getFields() * 10;
+		while(mapNotFilled&&runs++<maxRuns)
+		{
+			//find empty Field
+		}
+
+		// // Walk through the whole field
+		// for (int i = 0; i < data.getFields(); i++)
+		// for (int n = 0; n < data.getFields(); n++) {
+		// if (ltm.size() == 0)
+		// return;
+		// if (data.get(i, n).getArea() != null)
+		// continue;
+		// List<TerrainModel> allowedTerrains = getAllowedTerrains(i, n);
+		// int runs = 0;
+		// TerrainModel tmFound = null;
+		// int rand = 0;
+		// while (tmFound == null && runs++ < 100) {
+		// rand = r.nextInt(ltm.size());
+		// if (allowedTerrains.contains(ltm.get(rand)))
+		// tmFound = ltm.get(rand);
+		// }
+		// if (runs == 100)
+		// System.out.println("Didn't find a match");
+		// if (tmFound == null)
+		// continue;
+		// data.get(i, n).setArea(tmFound);
+		// ltm.remove(rand);
+		// }
+		// System.out.println("Left " + ltm.size() + " entrys in list");
+
+	}
+	/**
+	 * Gets a random field from the map, or zero if no one fits the parameter
+	 * @param emtpy true if the field should be empty, or false if it should have a terrain
+	 * @return
+	 */
+	private myPoint getRandomField(boolean emtpy)
+	{
+		return null;
+	}
+
 	private void fillSingleTerrainManuall(final int x, final int y, int mouseX, int mouseY) {
 		JPopupMenu jpm = new JPopupMenu();
 		List<TerrainModel> ltm = getAllowedTerrains(x, y);
@@ -458,8 +490,43 @@ public class FieldPanel extends JPanel implements ActionListener {
 			allTypes.add(jmi);
 
 		}
+		JMenu allowedObjects = new JMenu("Allowed Objects");
+		final FieldObject areaType = data.get(x, y);
+		for (final ObjectModel om : envoirment.objects)
+			if (om.isAllowedTo(areaType.getArea().getName())) {
+				JMenuItem jmi = new JMenuItem(om.getName());
+				jmi.addActionListener(new ActionListener() {
+
+					@Override
+					public void actionPerformed(ActionEvent arg0) {
+						areaType.addObject(om.getName());
+						repaint();
+					}
+				});
+				allowedObjects.add(jmi);
+			}
+		JMenu activeObjects = null;
+		if (areaType.hasObjects()) {
+			activeObjects = new JMenu("Remove Objects");
+			for (final String s : areaType.getObjects()) {
+				JMenuItem jmi = new JMenuItem("remove " + s);
+				jmi.addActionListener(new ActionListener() {
+
+					@Override
+					public void actionPerformed(ActionEvent arg0) {
+						areaType.getObjects().remove(s);
+						repaint();
+					}
+				});
+				activeObjects.add(jmi);
+			}
+		}
 		jpm.add(allowedTypes);
 		jpm.add(allTypes);
+		jpm.addSeparator();
+		jpm.add(allowedObjects);
+		if (activeObjects != null)
+			jpm.add(activeObjects);
 		jpm.show(this, mouseX, mouseY);
 	}
 
@@ -521,265 +588,6 @@ public class FieldPanel extends JPanel implements ActionListener {
 		res.removeAll(del);
 		return res;
 	}
-	// private void placeDestination() {
-	//// int halfField = data.getFields() / 2;
-	//// int x = halfField + r.nextInt(halfField);
-	//// int y = halfField + r.nextInt(halfField);
-	//// data.get(x, y).setArea(FieldType.Ziel);
-	// }
-	//
-	// private void placeBoarder() {
-	//// for (int i = 0; i < data.getFields(); i++)
-	//// data.get(i, 0).setArea(FieldType.Wald);
-	// }
-	//
-	// private void placeRiver() {
-	//// int maxRiver = data.getFields();
-	//// int numRiver = 0;
-	//// // find Start
-	//// int x;
-	//// int y;
-	//// boolean startfound = false;
-	//// do {
-	//// x = r.nextInt(data.getFields());
-	//// y = r.nextInt(data.getFields());
-	//// FieldType ft = data.get(x, y).getArea();
-	//// startfound = ft == null;
-	//// } while (!startfound);
-	//// data.get(x, y).setArea(FieldType.Fluss);
-	//// int[] mod = { -1, 0, +1 };
-	//// int trys = 0;
-	//// while (numRiver < maxRiver && trys < 10) {
-	//// int modx = mod[r.nextInt(3)];
-	//// int mody = modx == 0 ? mod[r.nextInt(3)] : 0;
-	//// if (x + modx < 0 || x + modx >= data.getFields() || y + mody < 0 || y +
-	// mody >= data.getFields()) {
-	//// trys++;
-	//// continue;
-	//// }
-	//// if (data.get(x + modx, y + mody).getArea() != null) {
-	//// trys++;
-	//// continue;
-	//// }
-	//// x += modx;
-	//// y += mody;
-	//// data.get(x, y).setArea(FieldType.Fluss);
-	//// numRiver++;
-	//// }
-	// }
-	//
-	// private void fillEmptyTerrain() {
-	////
-	//// // fill up to 10% random
-	//// int max = (data.getFields() * data.getFields()) / 10;
-	//// for (int i = 0; i < max; i++) {
-	//// int x = r.nextInt(data.getFields());
-	//// int y = r.nextInt(data.getFields());
-	//// if (data.get(x, y).getArea() == null)
-	//// data.get(x, y).setArea(getRandomTerrain());
-	//// }
-	////
-	//// // fill rest by rules
-	//// for (int i = 0; i < data.getFields(); i++)
-	//// for (int n = 0; n < data.getFields(); n++) {
-	//// if (data.get(i, n).getArea() != null)
-	//// continue;
-	//// FieldType ft;
-	//// int trys = 0;
-	//// do {
-	//// ft = getRandomTerrain();
-	////
-	//// } while (!checkAreaType(ft, i, n) && trys++ < 10);
-	//// if (trys >= 10)
-	//// ft = FieldType.LEER;
-	//// data.get(i, n).setArea(ft);
-	//// }
-	// }
-	//
-	// private boolean checkAreaType(FieldType ft, int x, int y) {
-	//// FieldType north = x == 0 ? FieldType.LEER : data.get(x - 1,
-	// y).getArea();
-	//// FieldType east = y == data.getFields() - 1 ? FieldType.LEER :
-	// data.get(x, y + 1).getArea();
-	//// FieldType south = x == data.getFields() - 1 ? FieldType.LEER :
-	// data.get(x + 1, y).getArea();
-	//// FieldType west = y == 0 ? FieldType.LEER : data.get(x, y -
-	// 1).getArea();
-	////
-	//// return checkPair(ft, west) && checkPair(ft, south) && checkPair(ft,
-	// east) && checkPair(ft, north);
-	// }
-	//
-	// private boolean checkPair(FieldType a, FieldType b) {
-	// // Wald neben Unterholz
-	// // Wald neben Wald
-	// // Wald neben Ziel
-	// // Unterholz neben Sand
-	// // Unterholz neben Schutt
-	// // Unterholz neben Wasser
-	// // Unterholz neben Unterholz
-	// // Schlamm neben Sand
-	// // Schlamm neben Schutt
-	// // Schlamm neben Unterholz
-	// // Schlamm neben Wasser
-	// // Schlamm neben Schlamm
-	// // Schutt neben Unterholz
-	// // Schutt neben Schlamm
-	// // Schutt neben Schutt
-	// // Sand neben Sand
-	// // Sand neben Schlamm
-	// // Sand neben Unterholz
-	// // Sand neben Wasser
-	// if (a == FieldType.LEER || b == FieldType.LEER || a == null || b == null)
-	// return true;
-	// switch (a) {
-	// case Fluss:
-	// switch (b) {
-	// case Fluss:
-	// case Unterholz:
-	// case Schlamm:
-	// case Sand:
-	// return true;
-	// default:
-	// return false;
-	// }
-	// case Sand:
-	// switch (b) {
-	// case Fluss:
-	// case Sand:
-	// case Schlamm:
-	// case Unterholz:
-	// return true;
-	// case Schutt:
-	// case Wald:
-	// case Ziel:
-	// default:
-	// return false;
-	// }
-	// case Schlamm:
-	// switch (b) {
-	// case Fluss:
-	// case Sand:
-	// case Schlamm:
-	// case Unterholz:
-	// case Schutt:
-	// return true;
-	// case Wald:
-	// case Ziel:
-	// default:
-	// return false;
-	// }
-	// case Schutt:
-	// switch (b) {
-	// case Unterholz:
-	// case Schutt:
-	// case Schlamm:
-	// return true;
-	// case Fluss:
-	// case LEER:
-	// case Sand:
-	// case Wald:
-	// case Ziel:
-	// default:
-	// return false;
-	// }
-	// case Unterholz:
-	// switch (b) {
-	// case Unterholz:
-	// case Schlamm:
-	// case Schutt:
-	// case Fluss:
-	// return true;
-	// case Sand:
-	// case Wald:
-	// case Ziel:
-	// default:
-	// return false;
-	// }
-	// case Wald:
-	// switch (b) {
-	// case Wald:
-	// case Ziel:
-	// case Unterholz:
-	// return true;
-	// case Fluss:
-	// case Sand:
-	// case Schlamm:
-	// case Schutt:
-	// default:
-	// return false;
-	// }
-	// case Ziel:
-	// switch (b) {
-	// case Wald:
-	// return false;
-	// case Fluss:
-	// case LEER:
-	// case Sand:
-	// case Schlamm:
-	// case Schutt:
-	// case Unterholz:
-	// case Ziel:
-	// default:
-	// return true;
-	// }
-	// case LEER:
-	// default:
-	// }
-	// return true;
-	// }
-	//
-	// private FieldType getRandomTerrain() {
-	// // 35% Wald
-	// // 40% Unterholz
-	// // 10% Schlamm
-	// // 10% Sand
-	// // 5% Schutt
-	// int type = r.nextInt(100);
-	//
-	// if (type < 36)
-	// return FieldType.Wald;
-	//
-	// if (type < 76)
-	// return FieldType.Unterholz;
-	//
-	// if (type < 86)
-	// return FieldType.Schlamm;
-	//
-	// if (type < 96)
-	// return FieldType.Sand;
-	//
-	// if (type < 100)
-	// return FieldType.Schutt;
-	// return FieldType.LEER;
-	// }
-	//
-	// private void fillRemainingWhitheSpace() {
-	// for (int x = 0; x < data.getFields(); x++)
-	// for (int y = 0; y < data.getFields(); y++)
-	// if (data.get(x, y).getArea() == FieldType.LEER) {
-	// FieldType north = x == 0 ? FieldType.LEER : data.get(x - 1, y).getArea();
-	// FieldType east = y == data.getFields() - 1 ? FieldType.LEER : data.get(x,
-	// y + 1).getArea();
-	// FieldType south = x == data.getFields() - 1 ? FieldType.LEER : data.get(x
-	// + 1, y).getArea();
-	// FieldType west = y == 0 ? FieldType.LEER : data.get(x, y - 1).getArea();
-	// FieldType placeType = FieldType.Unterholz;
-	//
-	// for (FieldType ft : colorCode.keySet()) {
-	// if (ft == FieldType.LEER || ft == FieldType.Ziel)
-	// continue;
-	// if (checkPair(ft, north) && checkPair(ft, east) && checkPair(ft, west) &&
-	// checkPair(ft, west)
-	// && checkPair(ft, south)) {
-	// placeType = ft;
-	// break;
-	// }
-	// }
-	// data.get(x, y).setArea(placeType);
-	//
-	// }
-	// }
 
 	private void setSurvilvalSklills() {
 		for (int i = 0; i < data.getFields(); i++)

@@ -65,6 +65,11 @@ public class TerrainModel extends BaseModel {
 		return new Color(red, green, blue);
 	}
 
+	public Color getInverseColor()
+	{
+		return new Color(255-red,255-green,255-blue);
+	}
+	
 	@XmlTransient
 	public void setTerrainConfig(TerrainConfig tc) {
 		terraConf = tc;
