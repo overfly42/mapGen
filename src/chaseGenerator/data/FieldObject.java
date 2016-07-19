@@ -1,5 +1,6 @@
 package chaseGenerator.data;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,7 +13,7 @@ import chaseGenerator.TrapType;
 import chaseGenerator.models.TerrainModel;
 
 @XmlRootElement
-public class FieldObject {
+public class FieldObject implements Serializable {
 	private TerrainModel area;
 	private TrapType trap;
 	@XmlElement

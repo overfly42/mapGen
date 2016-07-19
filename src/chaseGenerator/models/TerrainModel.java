@@ -14,6 +14,7 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
+import chaseGenerator.data.EnvData;
 import chaseGenerator.gui.TerrainConfig;
 
 /**
@@ -23,7 +24,7 @@ import chaseGenerator.gui.TerrainConfig;
  * @author christian
  *
  */
-@XmlRootElement
+//@XmlRootElement
 public class TerrainModel extends BaseModel {
 
 	private class AjectionPropability implements Comparable<AjectionPropability> {
@@ -47,7 +48,9 @@ public class TerrainModel extends BaseModel {
 	private boolean destination;
 
 	private boolean border;
-	private TerrainConfig terraConf = null;
+	private transient TerrainConfig terraConf = null;
+//	@XmlTransient
+	private transient EnvData env;
 
 	private int areas = 0;
 	@XmlElement
@@ -58,18 +61,17 @@ public class TerrainModel extends BaseModel {
 		blue = Color.RED.getBlue();
 		green = Color.RED.getGreen();
 		adjectionProbability = new HashMap<>();
+		env = null;
 	}
-
 
 	public Color getColor() {
 		return new Color(red, green, blue);
 	}
 
-	public Color getInverseColor()
-	{
-		return new Color(255-red,255-green,255-blue);
+	public Color getInverseColor() {
+		return new Color(255 - red, 255 - green, 255 - blue);
 	}
-	
+
 	@XmlTransient
 	public void setTerrainConfig(TerrainConfig tc) {
 		terraConf = tc;
@@ -81,14 +83,24 @@ public class TerrainModel extends BaseModel {
 
 	public void setPropability(String s, int i) {
 		// Set borders
-		if (i > 100)
-			i = 100;
-		else if (i < 0)
+		if (i > 100) {
+			int above = 0;
+			// count elelemnts above 100
+			for (String name : adjectionProbability.keySet())
+				if (adjectionProbability.get(name) > 0 && !name.equals(s))
+					above++;
+			i = 100 - above;
+		} else if (i < 0)
 			i = 0;
+		// set the new probabiltity
 		adjectionProbability.put(s, i);
-		Object[] objects = adjectionProbability.keySet().toArray();
+		// reduce or increase other values
+		Object[] objects = adjectionProbability.keySet().toArray();// Elements
+																	// to run
+																	// over
 		if (objects.length <= 1)
 			return;
+		// Add Elemements to modify (the just adjustet one not)
 		String[] names = new String[objects.length - 1];
 		int pos = 0;
 		for (Object o : objects)
@@ -96,6 +108,7 @@ public class TerrainModel extends BaseModel {
 				continue;
 			else
 				names[pos++] = (String) o;
+		// Set / Caclulate parameter for endings
 		int max = names.length;
 		int step = getWholePropability() > 100 ? -1 : 1;
 		int steps = 0;
@@ -103,11 +116,24 @@ public class TerrainModel extends BaseModel {
 		while (getWholePropability() != 100 && steps++ < maxStep) {
 			pos = (pos + 1) % max;
 			int val = getPropability(names[pos]) + step;
-			if (val < 0 || val > 100)
+			if (val < 1 || val > 100) // Do not set an adjection propability to
+										// zero automaticaly
 				continue;
 			adjectionProbability.put(names[pos], val);
 		}
+		// Take care for a bi directional connection
+		// Get coutnerpart
+		TerrainModel tm = env.getModel(s);
+		if (tm.getPropability(getName()) == 0 && i > 0)
+			tm.setPropability(getName(), 1);// the lowest non zero value
+		else if (tm.getPropability(s) > 0 && i == 0)
+			tm.setPropability(getName(), 0);// there is no connection between
+											// this two
 		update();
+	}
+
+	public void setEnviroment(EnvData ed) {
+		env = ed;
 	}
 
 	private int getWholePropability() {
@@ -155,7 +181,7 @@ public class TerrainModel extends BaseModel {
 
 	public boolean isAdjectableTo(String s) {
 		for (String adjecting : adjectionProbability.keySet())
-			if (s.equals(adjecting)&&adjectionProbability.get(s)>0)
+			if (s.equals(adjecting) && adjectionProbability.get(s) > 0)
 				return true;
 		return false;
 	}
@@ -166,8 +192,6 @@ public class TerrainModel extends BaseModel {
 		if (terraConf != null && !destination)
 			terraConf.unsetDestination();
 	}
-
-
 
 	/**
 	 * 
@@ -185,9 +209,23 @@ public class TerrainModel extends BaseModel {
 		Collections.sort(elemtnes);
 		for (AjectionPropability ap : elemtnes) {
 			p += ap.propability;
-			if (p >= percent)
+			if (p >= percent )
 				return ap.name;
 		}
 		return null;
+	}
+
+	@Override
+	public String toString() {
+		return this.getName();
+	}
+
+	@XmlTransient
+	public List<String> getAdjectingTerrains() {
+		List<String> ls = new ArrayList<>();
+		for (String s : adjectionProbability.keySet())
+			if (adjectionProbability.get(s) > 0)
+				ls.add(s);
+		return ls;
 	}
 }

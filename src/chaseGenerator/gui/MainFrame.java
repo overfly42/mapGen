@@ -11,6 +11,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -381,50 +383,69 @@ public class MainFrame {
 
 	private void load() {
 
-		File f = mapFile.getSelectedFile();
-		if (mapFile == null)
-			return;
-		JAXBContext c;
+//		File f = mapFile.getSelectedFile();
+//		if (mapFile == null)
+//			return;
+//		JAXBContext c;
+//		try {
+//			c = JAXBContext.newInstance(Field.class);
+//			Unmarshaller u = c.createUnmarshaller();
+//			FileInputStream fis = new FileInputStream(f);
+//			fp.setData((Field) u.unmarshal(fis));
+//			fis.close();
+//		} catch (JAXBException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		} catch (FileNotFoundException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 		try {
-			c = JAXBContext.newInstance(Field.class);
-			Unmarshaller u = c.createUnmarshaller();
-			// u.setProperty(Unmar, "true");
-			FileInputStream fis = new FileInputStream(f);
-			fp.setData((Field) u.unmarshal(fis));
-			fis.close();
-		} catch (JAXBException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(mapFile.getSelectedFile()));
+			Object o = ois.readObject();
+			if(Field.class.isAssignableFrom(o.getClass()))
+				fp.setData((Field) o);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-
+		
 	}
 
 	private void save() {
 		try {
-			JAXBContext c = JAXBContext.newInstance(Field.class);
-			Marshaller m = c.createMarshaller();
-			m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-			// FileOutputStream fos = new FileOutputStream(new
-			// File("field.data"));
-			FileOutputStream fos = new FileOutputStream(mapFile.getSelectedFile());
-			m.marshal(fp.getData(), fos);
-			fos.close();
-		} catch (JAXBException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(mapFile.getSelectedFile()));
+			oos.writeObject(fp.getData());
+			oos.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+//		try {
+//			JAXBContext c = JAXBContext.newInstance(Field.class);
+//			Marshaller m = c.createMarshaller();
+//			m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+//			// FileOutputStream fos = new FileOutputStream(new
+//			// File("field.data"));
+//			FileOutputStream fos = new FileOutputStream(mapFile.getSelectedFile());
+//			m.marshal(fp.getData(), fos);
+//			fos.close();
+//		} catch (JAXBException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		} catch (FileNotFoundException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 	}
 
 	private void print() {
@@ -491,6 +512,8 @@ public class MainFrame {
 			FileInputStream fis = new FileInputStream(envFile.getSelectedFile());
 			enviroment = (EnvData) u.unmarshal(fis);
 			fis.close();
+			for (TerrainModel tm : enviroment.fields)
+				tm.setEnviroment(enviroment);
 		} catch (JAXBException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -561,6 +584,7 @@ public class MainFrame {
 			return;
 		System.out.println("Adding Terrain: " + showInputDialog);
 		TerrainModel tm = new TerrainModel();
+		tm.setEnviroment(enviroment);
 		tm.setChoosen(false);
 		tm.setName(showInputDialog);
 		enviroment.fields.add(tm);

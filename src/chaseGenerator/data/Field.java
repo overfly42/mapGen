@@ -1,5 +1,6 @@
 package chaseGenerator.data;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -7,14 +8,14 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
-public class Field {
-	//The single Elements of the whole field
+public class Field implements Serializable {
+	// The single Elements of the whole field
 	@XmlElement
 	private FieldObject[][] data;
-	//Size of the field in x and y direction
+	// Size of the field in x and y direction
 	@XmlElement
 	private int fields = 25;
-	//Percentage distribution to all terrains
+	// Percentage distribution to all terrains
 	@XmlElement
 	private Map<String, Integer> overall;
 
@@ -53,9 +54,13 @@ public class Field {
 	}
 
 	/**
-	 * Sets the given percentage and takes care that the sum of all values is exact 100
-	 * @param key Name of the terrain
-	 * @param val percentage for this terrain
+	 * Sets the given percentage and takes care that the sum of all values is
+	 * exact 100
+	 * 
+	 * @param key
+	 *            Name of the terrain
+	 * @param val
+	 *            percentage for this terrain
 	 */
 	public void setPercentage(String key, int val) {
 		if (val < 0)
@@ -82,15 +87,18 @@ public class Field {
 	}
 
 	/**
-	 * Sets the Percentage to the given value, it will be checked if the percentage is between 0 and 100 but there is no 
-	 * check of overall percentage
+	 * Sets the Percentage to the given value, it will be checked if the
+	 * percentage is between 0 and 100 but there is no check of overall
+	 * percentage
+	 * 
 	 * @param key
 	 * @param val
 	 */
-	public void forcePercentage(String key,int val)
-	{
-		if(val < 0)val = 0;
-		if(val > 100) val = 100;
+	public void forcePercentage(String key, int val) {
+		if (val < 0)
+			val = 0;
+		if (val > 100)
+			val = 100;
 		overall.put(key, val);
 	}
 
