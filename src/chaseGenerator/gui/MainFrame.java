@@ -382,27 +382,6 @@ public class MainFrame {
 	}
 
 	private void load() {
-
-//		File f = mapFile.getSelectedFile();
-//		if (mapFile == null)
-//			return;
-//		JAXBContext c;
-//		try {
-//			c = JAXBContext.newInstance(Field.class);
-//			Unmarshaller u = c.createUnmarshaller();
-//			FileInputStream fis = new FileInputStream(f);
-//			fp.setData((Field) u.unmarshal(fis));
-//			fis.close();
-//		} catch (JAXBException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (FileNotFoundException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
 		try {
 			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(mapFile.getSelectedFile()));
 			Object o = ois.readObject();
@@ -424,28 +403,8 @@ public class MainFrame {
 			oos.writeObject(fp.getData());
 			oos.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-//		try {
-//			JAXBContext c = JAXBContext.newInstance(Field.class);
-//			Marshaller m = c.createMarshaller();
-//			m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-//			// FileOutputStream fos = new FileOutputStream(new
-//			// File("field.data"));
-//			FileOutputStream fos = new FileOutputStream(mapFile.getSelectedFile());
-//			m.marshal(fp.getData(), fos);
-//			fos.close();
-//		} catch (JAXBException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (FileNotFoundException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
 	}
 
 	private void print() {

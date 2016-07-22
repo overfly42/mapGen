@@ -360,7 +360,20 @@ public class FieldPanel extends JPanel {
 	}
 
 	public void generateConfigTerrain() {
+		// prepair field
+		data.reCreateField(data.getFields());
+		// prepair data
+		Map<String, TreeElement> allowedTerrainTrees = getAllowedTerrainTrees();
+		Map<String, Integer> effectiveTreeDeepth = getEffectivTreeDeepth(allowedTerrainTrees);
+
+		// PlaceFields
 		placeBorder();
+		placeRandomSpecial();
+
+		// prepair data for field filling
+		Map<String, Integer> usableElements = getUsableElements();
+		fillEmptyTerrains(effectiveTreeDeepth, allowedTerrainTrees, usableElements);
+		fillEmptyTerrains(effectiveTreeDeepth, allowedTerrainTrees);
 		repaint();
 	}
 
@@ -385,7 +398,6 @@ public class FieldPanel extends JPanel {
 				if (base == null) // if it is null, there is an error
 				{
 					base = envoirment.getRandomTerrain();
-//					System.out.println("Random terrain is " + base.getName());
 				}
 				String nextArea = null;
 				List<TerrainModel> allowedTerrains = null;
@@ -393,20 +405,72 @@ public class FieldPanel extends JPanel {
 				int run = 0;
 				do {
 					nextArea = base.getAreaNameOf(r.nextInt(100));
-					allowedTerrains = getAllowedTerrains(x, y);
+					allowedTerrains = getAllowedTerrains(x, y, effectiveTreeDeep, terrainTrees);
 				} while (run++ < max// dont run forever
 						// Conditions to run further
-						// Element  has  to be  choosen
+						// Element has to be choosen
 						&& !envoirment.getModel(nextArea).isChoosen()
-						
-						// Element  must be allowed
+
+				// Element must be allowed
 						&& !contains(allowedTerrains, nextArea));
 				if (run == max + 1)
 					continue;
 				data.get(x, y).setArea(envoirment.getModel(nextArea));
-//				System.out.println(run + " Next is " + nextArea + " " + envoirment.getModel(nextArea).getAreas());
-
+				//
 			}
+	}
+
+	private void fillEmptyTerrains(Map<String, Integer> effectiveTreeDeep, Map<String, TreeElement> terrainTrees,
+			Map<String, Integer> fieldCount) {
+		System.out.println("Zu vergeben sind:");
+		for (String s : fieldCount.keySet())
+			System.out.println(s + " " + fieldCount.get(s));
+		Random r = new Random();
+		// Fill on field for every
+		int max = 10;
+		for (String key : fieldCount.keySet()) {
+			Integer value = fieldCount.get(key);
+			int x;
+			int y;
+			int act = 0;
+			do {
+				x = r.nextInt(data.getFields() - 2) + 1;
+				y = r.nextInt(data.getFields() - 2) + 1;
+			} while (data.get(x, y).getArea() != null
+					&& !contains(getAllowedTerrains(x, y, effectiveTreeDeep, terrainTrees), key) && act++ < max);
+			if (value > 0)
+				data.get(x, y).setArea(envoirment.getModel(key));
+			value = Math.max(0, value - 1);
+			fieldCount.put(key, value);
+		}
+		// Fill the rest
+		for (int x = 1; x < data.getFields() - 1; x++) {
+			for (int y = 1; y < data.getFields(); y++) {
+				boolean allowed = false;
+				Integer value = 0;
+				String name = ".";
+				int run = 0;
+				do {
+					if (data.get(x, y).getArea() != null || fieldCount.size() < 1)
+						break;
+					name = (String) fieldCount.keySet().toArray()[r.nextInt(fieldCount.size())];
+					value = fieldCount.remove(name);
+					List<TerrainModel> allowedTerrains = getAllowedTerrains(x, y, effectiveTreeDeep, terrainTrees);
+					allowed = contains(allowedTerrains, name);
+					if (!allowed)
+						fieldCount.put(name, value);
+				} while (run++ < max && !allowed);
+				if (allowed) {
+					data.get(x, y).setArea(envoirment.getModel(name));
+					value--;
+				}
+				if (value > 0)
+					fieldCount.put(name, value);
+			}
+		}
+		System.out.println("Übrig sind:");
+		for (String s : fieldCount.keySet())
+			System.out.println(s + " " + fieldCount.get(s));
 	}
 
 	private void fillSingleTerrainManuall(final int x, final int y, int mouseX, int mouseY) {
@@ -496,6 +560,7 @@ public class FieldPanel extends JPanel {
 	 * @param y
 	 * @return
 	 */
+	@Deprecated
 	private List<TerrainModel> getAllowedTerrains(int x, int y) {
 		List<TerrainModel> res = new ArrayList<>();
 		if (x < 1 || y < 1 || x > data.getFields() - 1 || y > data.getFields() - 1)
@@ -564,6 +629,44 @@ public class FieldPanel extends JPanel {
 	}
 
 	/**
+	 * Returns a List of all terrains with corosponding number of Fields
+	 * 
+	 * @return
+	 */
+	private Map<String, Integer> getUsableElements() {
+		Map<String, Integer> msi = new HashMap<>();
+		// Get Data from config
+
+		for (TerrainModel tm : envoirment.fields) {
+			// if (!tm.isChoosen())
+			// continue;
+			msi.put(tm.getName(), data.getNumberOfFields(tm.getName()));
+		}
+		// Count allready used fields
+		Map<String, Integer> removeable = new HashMap<>();
+		for (int i = 0; i < data.getFields(); i++) {
+			for (int n = 0; n < data.getFields(); n++) {
+				TerrainModel tm = data.get(i, n).getArea();
+				if (tm == null)
+					continue;
+				Integer val = removeable.get(tm.getName());
+				if (val == null)
+					val = 0;
+				val++;
+				removeable.put(tm.getName(), val);
+			}
+		}
+		// remove fields allready used
+		for (String s : msi.keySet()) {
+			Integer a = msi.get(s);
+			Integer b = removeable.get(s);
+			msi.put(s, Math.max(0, ((a == null ? 0 : a) - (b == null ? 0 : b))));
+		}
+		// return the rest
+		return msi;
+	}
+
+	/**
 	 * Sets this filed to the given terrain model, and reorganizes all
 	 * surrouning fields
 	 *
@@ -606,12 +709,16 @@ public class FieldPanel extends JPanel {
 			return;
 		int max = data.getFields();
 		for (int i = 0; i < max; i++) {
-			FieldObject fo = new FieldObject();
-			fo.setArea(tm);
-			data.setFieldAt(fo, max - 1, i);
-			data.setFieldAt(fo, 0, i);
-			data.setFieldAt(fo, i, 0);
-			data.setFieldAt(fo, i, max - 1);
+			// FieldObject fo = new FieldObject();
+			// fo.setArea(tm);
+			// data.setFieldAt(fo, max - 1, i);
+			// data.setFieldAt(fo, 0, i);
+			// data.setFieldAt(fo, i, 0);
+			// data.setFieldAt(fo, i, max - 1);
+			data.get(max - 1, i).setArea(tm);
+			data.get(0, i).setArea(tm);
+			data.get(i, 0).setArea(tm);
+			data.get(i, max - 1).setArea(tm);
 		}
 	}
 
@@ -668,7 +775,6 @@ public class FieldPanel extends JPanel {
 		if (ltm.contains(tm))
 			return true;
 		for (TerrainModel t : ltm) {
-			System.out.println(tm.getName() + " " + t.getName());
 			if (t.getName().equals(tm.getName()))
 				return true;
 		}
@@ -744,32 +850,7 @@ public class FieldPanel extends JPanel {
 				tm = data.get(x - nx, y - ny).getArea();
 			if (tm != null)
 				ss.add(tm.getName());
-
 		}
-		// for (int i = -to; i <= to; i++) {
-		// int nx = x + i;
-		// int ny1 = y + (to - Math.abs(i));
-		// int ny2 = y - (to - Math.abs(i));
-		// for (int n = 0; n < to - Math.abs(i); n++)
-		// System.out.print(".");
-		// for (int n = 0; n <= 2*Math.abs(i); n++)
-		// System.out.print("-");
-		// for (int n = 0; n < to - Math.abs(i); n++)
-		// System.out.print(".");
-		// System.out.println();
-		// if (0 > nx || nx > data.getFields())
-		// continue;
-		// if (0 <= ny1 && ny1 < data.getFields()) {
-		// TerrainModel tm = data.get(nx, ny1).getArea();
-		// if (tm != null)
-		// ss.add(tm.getName());
-		// }
-		// if (0 <= ny2 && ny2 < data.getFields()) {
-		// TerrainModel tm = data.get(nx, ny2).getArea();
-		// if (tm != null)
-		// ss.add(tm.getName());
-		// }
-		// }
 		return ss;
 	}
 
