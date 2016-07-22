@@ -385,7 +385,7 @@ public class MainFrame {
 		try {
 			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(mapFile.getSelectedFile()));
 			Object o = ois.readObject();
-			if(Field.class.isAssignableFrom(o.getClass()))
+			if (Field.class.isAssignableFrom(o.getClass()))
 				fp.setData((Field) o);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -394,7 +394,7 @@ public class MainFrame {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 	}
 
 	private void save() {
@@ -464,6 +464,10 @@ public class MainFrame {
 	}
 
 	private void loadElements() {
+		if (!envFile.getSelectedFile().exists()) {
+			enviroment = new EnvData();
+			return;
+		}
 		JAXBContext c;
 		try {
 			c = JAXBContext.newInstance(EnvData.class);
