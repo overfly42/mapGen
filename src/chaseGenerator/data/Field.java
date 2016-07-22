@@ -46,7 +46,8 @@ public class Field implements Serializable {
 
 	public int getPecentage(String key) {
 		try {
-			return overall.get(key);
+			if (overall.containsKey(key))
+				return overall.get(key);
 		} catch (Exception e) {
 			System.out.println("Catch an Exception");
 		}

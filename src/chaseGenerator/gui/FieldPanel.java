@@ -101,13 +101,17 @@ public class FieldPanel extends JPanel {
 		 * 
 		 * @param ed
 		 */
-		public TreeElement(EnvData ed, String name) {
+		public TreeElement(EnvData ed, String name, boolean respectChoosen) {
 			children = new ArrayList<>();
 			elementName = name;
 			TerrainModel tm = ed.getModel(name);
 			children.add(new TreeElement(this, tm.getName()));
-			addChildren(ed, tm);
+			addChildren(ed, tm, respectChoosen);
 
+		}
+
+		public TreeElement(EnvData ed, String name) {
+			this(ed, name, true);
 		}
 
 		/**
@@ -116,8 +120,8 @@ public class FieldPanel extends JPanel {
 		 * @param ed
 		 * @param tm
 		 */
-		public void addChildren(EnvData ed, TerrainModel tm) {
-			if (!tm.isChoosen())
+		public void addChildren(EnvData ed, TerrainModel tm, boolean respectChoosen) {
+			if (respectChoosen && !tm.isChoosen())
 				return;
 			for (TerrainModel tm2 : ed.fields) {
 				// This element don't need to be inserted in the tree
@@ -128,7 +132,7 @@ public class FieldPanel extends JPanel {
 				if (!containsUp(tm2.getName())) {
 					TreeElement te = new TreeElement(this, tm2.getName());
 					children.add(te);
-					te.addChildren(ed, tm2);
+					te.addChildren(ed, tm2, respectChoosen);
 				}
 			}
 		}
@@ -422,9 +426,6 @@ public class FieldPanel extends JPanel {
 
 	private void fillEmptyTerrains(Map<String, Integer> effectiveTreeDeep, Map<String, TreeElement> terrainTrees,
 			Map<String, Integer> fieldCount) {
-		System.out.println("Zu vergeben sind:");
-		for (String s : fieldCount.keySet())
-			System.out.println(s + " " + fieldCount.get(s));
 		Random r = new Random();
 		// Fill on field for every
 		int max = 10;
@@ -468,9 +469,6 @@ public class FieldPanel extends JPanel {
 					fieldCount.put(name, value);
 			}
 		}
-		System.out.println("Übrig sind:");
-		for (String s : fieldCount.keySet())
-			System.out.println(s + " " + fieldCount.get(s));
 	}
 
 	private void fillSingleTerrainManuall(final int x, final int y, int mouseX, int mouseY) {
@@ -509,7 +507,7 @@ public class FieldPanel extends JPanel {
 		JMenu allowedObjects = new JMenu("Allowed Objects");
 		final FieldObject areaType = data.get(x, y);
 		for (final ObjectModel om : envoirment.objects)
-			if (areaType.getArea() == null || om.isAllowedTo(areaType.getArea().getName()))
+			if (om.isChoosen()&&(areaType.getArea() == null || om.isAllowedTo(areaType.getArea().getName())))
 
 			{
 				JMenuItem jmi = new JMenuItem(om.getName());
@@ -675,6 +673,50 @@ public class FieldPanel extends JPanel {
 	 * @param tm
 	 */
 	private void reorganize(int x, int y, TerrainModel tm) {
+		Map<String, TreeElement> allowedTerrainTrees = getAllowedTerrainTrees(false);
+		Map<String, Integer> effectivTreeDeepth = getEffectivTreeDeepth(allowedTerrainTrees);
+		int i = 0;
+		data.get(x, y).setArea(null);
+		while (!contains(getAllowedTerrains(x, y, effectivTreeDeepth, allowedTerrainTrees), tm.getName())) {
+			data.get(x, y).setArea(tm);// set the value is has to be
+			deleteDistance(x, y, i++, false);
+			data.get(x, y).setArea(null);// reset the value to reenable the
+											// boolean expression of the while
+		}
+		data.get(x, y).setArea(tm);// finaly set
+		fillEmptyTerrains(effectivTreeDeepth, allowedTerrainTrees);
+	}
+
+	/**
+	 * 
+	 * @param x
+	 * @param y
+	 * @param d
+	 * @param force
+	 *            removes all Terrains, false let allowed elements stay
+	 */
+	private void deleteDistance(int x, int y, int d, boolean force) {
+		Map<String, TreeElement> allowedTerrainTrees = getAllowedTerrainTrees(false);
+		Map<String, Integer> effectivTreeDeepth = getEffectivTreeDeepth(allowedTerrainTrees);
+		for (int i = 0; i <= d; i++) {
+			int X[] = new int[4];
+			int Y[] = new int[4];
+			X[0] = Math.min(x + i, data.getFields() - 1);
+			Y[0] = Math.min(y + (d - i), data.getFields() - 1);
+			X[1] = Math.max(0, x - i);
+			Y[1] = Math.min(y + (d - i), data.getFields() - 1);
+			X[2] = Math.min(x + i, data.getFields() - 1);
+			Y[2] = Math.max(0, y - (d - i));
+			X[3] = Math.max(0, x - i);
+			Y[3] = Math.max(0, y - (d - i));
+			for (int n = 0; n < 4; n++) {
+				List<TerrainModel> allowedTerrains = getAllowedTerrains(X[n], Y[n], effectivTreeDeepth,
+						allowedTerrainTrees);
+				TerrainModel area = data.get(X[n], Y[n]).getArea();
+				if (force || !contains(allowedTerrains, area == null ? "" : area.getName()))
+					data.get(X[n], Y[n]).setArea(null);
+			}
+		}
 	}
 
 	private TerrainModel getArea(int dir, int x, int y) {
@@ -747,10 +789,6 @@ public class FieldPanel extends JPanel {
 		}
 	}
 
-	private void placeConfigSpecial() {
-
-	}
-
 	private void createArea(int x, int y, int max, TerrainModel tm) {
 		if (max <= 0)
 			return;
@@ -771,6 +809,7 @@ public class FieldPanel extends JPanel {
 
 	}
 
+	@Deprecated
 	private boolean contains(List<TerrainModel> ltm, TerrainModel tm) {
 		if (ltm.contains(tm))
 			return true;
@@ -788,15 +827,19 @@ public class FieldPanel extends JPanel {
 		return false;
 	}
 
-	private Map<String, TreeElement> getAllowedTerrainTrees() {
+	private Map<String, TreeElement> getAllowedTerrainTrees(boolean repsectChoosen) {
 		Map<String, TreeElement> mst = new HashMap<>();
 		for (TerrainModel tm : envoirment.fields) {
-			if (tm.isChoosen()) {
-				TreeElement te = new TreeElement(envoirment, tm.getName());
+			if (tm.isChoosen() || !repsectChoosen) {
+				TreeElement te = new TreeElement(envoirment, tm.getName(), repsectChoosen);
 				mst.put(tm.getName(), te);
 			}
 		}
 		return mst;
+	}
+
+	private Map<String, TreeElement> getAllowedTerrainTrees() {
+		return getAllowedTerrainTrees(true);
 	}
 
 	/**
