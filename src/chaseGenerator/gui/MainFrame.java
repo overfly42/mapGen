@@ -24,6 +24,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
 
 import java.awt.BorderLayout;
@@ -62,10 +63,12 @@ public class MainFrame {
 	private JFrame frame;
 	private JPanel controls;
 	private JPanel container;
+
 	private JTabbedPane tabTerrain;
 	private JTabbedPane tabObjects;
 	private JFileChooser mapFile;
 	private JFileChooser envFile;
+	private JCheckBox adjustFieldSize;
 	private CardLayout layout;
 
 	// GUI - customized
@@ -122,6 +125,7 @@ public class MainFrame {
 		frame.setBounds(100, 100, 800, 500);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		fp.setEnv(enviroment);
+		JScrollPane sfp = new JScrollPane(fp);
 
 		controls = new JPanel();
 		frame.getContentPane().add(controls, BorderLayout.SOUTH);
@@ -153,6 +157,18 @@ public class MainFrame {
 			}
 		});
 		controls.add(generateConfig);
+
+		adjustFieldSize = new JCheckBox("Fit Field to view");
+		adjustFieldSize.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				boolean b = ((JCheckBox) arg0.getSource()).isSelected();
+				fp.setFit(b);
+				frame.repaint();
+			}
+		});
+		controls.add(adjustFieldSize);
 
 		fp.setBounds(0, 0, fp.getPreferredSize().height, fp.getPreferredSize().width);
 		fp.addMouseListener(new MouseListener() {
@@ -188,7 +204,7 @@ public class MainFrame {
 			}
 		});
 
-		container.add(fp, MAP);
+		container.add(sfp, MAP);
 		container.add(tabTerrain, FIELD_CONFIG);
 		container.add(cfg, CONFIG);
 		container.add(tabObjects, OBJ_CONFIG);
@@ -324,6 +340,9 @@ public class MainFrame {
 				if (userInput == JFileChooser.CANCEL_OPTION)
 					return;
 				loadElements();
+				sp.setEnviroment(enviroment);
+				initTabs();
+				frame.repaint();
 			}
 		});
 		fileMenu.add(jmi);
@@ -385,8 +404,10 @@ public class MainFrame {
 		try {
 			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(mapFile.getSelectedFile()));
 			Object o = ois.readObject();
-			if (Field.class.isAssignableFrom(o.getClass()))
+			if (Field.class.isAssignableFrom(o.getClass())) {
 				fp.setData((Field) o);
+				cfg.update((Field) o, enviroment);
+			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -430,13 +451,6 @@ public class MainFrame {
 				ps.println("\t" + d.getArea().toString());
 				ps.println("\t\t" + "Überlebenskunst SG: 10+ " + d.survival);
 				ps.println("\t\t" + "Wahrnehmung     SG: 10+ " + d.perception);
-				for (int j = 0; j < 4; j++) {
-					ps.println("\t\t" + dir[j] + "\t(" + d.nextField[j][0].type.toString() + ") SG: "
-							+ d.nextField[j][0].sg);
-					ps.println("\t\t\t(" + d.nextField[j][1].type.toString() + ") SG: " + d.nextField[j][1].sg);
-				}
-				if (d.getTrap() != null)
-					ps.println("\t\t\tFalle: " + d.getTrap().toString());
 				ps.println();
 			}
 		}
@@ -496,6 +510,7 @@ public class MainFrame {
 		if (enviroment == null)
 			return;
 		// Terrains
+		tabTerrain.removeAll();
 		for (TerrainModel tm : enviroment.fields) {
 			ScrollPane sp = new ScrollPane();
 			sp.add(new TerrainConfig(tm, enviroment, this));
@@ -505,6 +520,7 @@ public class MainFrame {
 		jt.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 		tabTerrain.add("All Terrains", new JScrollPane(jt));
 		// Objects
+		tabObjects.removeAll();
 		for (ObjectModel om : enviroment.objects) {
 			ScrollPane sp = new ScrollPane();
 			sp.add(new ObjectConfig(om, enviroment, this));

@@ -24,7 +24,7 @@ import chaseGenerator.gui.TerrainConfig;
  * @author christian
  *
  */
-//@XmlRootElement
+// @XmlRootElement
 public class TerrainModel extends BaseModel {
 
 	private class AjectionPropability implements Comparable<AjectionPropability> {
@@ -48,8 +48,10 @@ public class TerrainModel extends BaseModel {
 	private boolean destination;
 
 	private boolean border;
+	private boolean street;
+	private boolean streetCrossing;
 	private transient TerrainConfig terraConf = null;
-//	@XmlTransient
+	// @XmlTransient
 	private transient EnvData env;
 
 	private int areas = 0;
@@ -62,6 +64,7 @@ public class TerrainModel extends BaseModel {
 		green = Color.RED.getGreen();
 		adjectionProbability = new HashMap<>();
 		env = null;
+
 	}
 
 	public Color getColor() {
@@ -179,18 +182,28 @@ public class TerrainModel extends BaseModel {
 		return destination;
 	}
 
+	public boolean isStreet() {
+		return street;
+
+	}
+
+	public boolean isStreetCrossing() {
+		return streetCrossing;
+	}
+
+	public void setStreet(boolean b) {
+		street = b;
+	}
+
+	public void setStreetCrossing(boolean b) {
+		streetCrossing = b;
+	}
+
 	public boolean isAdjectableTo(String s) {
 		for (String adjecting : adjectionProbability.keySet())
 			if (s.equals(adjecting) && adjectionProbability.get(s) > 0)
 				return true;
 		return false;
-	}
-
-	public void setDestination(boolean destination) {
-
-		this.destination = destination;
-		if (terraConf != null && !destination)
-			terraConf.unsetDestination();
 	}
 
 	/**
@@ -209,7 +222,7 @@ public class TerrainModel extends BaseModel {
 		Collections.sort(elemtnes);
 		for (AjectionPropability ap : elemtnes) {
 			p += ap.propability;
-			if (p >= percent )
+			if (p >= percent)
 				return ap.name;
 		}
 		return null;

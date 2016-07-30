@@ -120,6 +120,17 @@ public class Config extends JPanel {
 		initCompontents();
 	}
 
+	public void update(Field f, EnvData e) {
+		if (f != null) {
+			data = f;
+			dtm.field = f;
+		}
+		if (e != null) {
+			env = e;
+			dtm.data = e;
+		}
+	}
+
 	private void initCompontents() {
 		this.setLayout(null);
 		JLabel l1 = new JLabel();

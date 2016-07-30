@@ -43,8 +43,13 @@ public class FieldPanel extends JPanel {
 	private static final int EAST = 1;
 	private static final int SOUTH = 2;
 	private static final int WEST = 3;
+	private static final int NORTH_WEST = 4;
+	private static final int SOUTH_WEST = 5;
+	private static final int NORTH_EAST = 6;
+	private static final int SOUTH_EAST = 7;
 
 	private int w, h, pxw, pxh, xOff, yOff;
+	private boolean fitToPanel;
 	private Field data;
 	private Random r;
 	private myPoint myPos;
@@ -224,7 +229,7 @@ public class FieldPanel extends JPanel {
 	}
 
 	public FieldPanel() {
-
+		this.fitToPanel = false;
 		this.setPreferredSize(new Dimension(500, 500));
 		this.setOpaque(true);
 		r = new Random();
@@ -254,9 +259,19 @@ public class FieldPanel extends JPanel {
 
 	@Override
 	public void paint(Graphics g) {
+		int elementSize = 40;
+		if (fitToPanel) {
 
-		w = this.getWidth();
-		h = this.getHeight();
+			// w = this.getWidth();
+			// h = this.getHeight();
+			w = this.getVisibleRect().width;
+			h = this.getVisibleRect().height;
+		} else {
+			w = elementSize * data.getFields();
+			h = elementSize * data.getFields();
+		}
+		this.setPreferredSize(new Dimension(w, h));
+		this.updateUI();
 		pxw = w / data.getFields();
 		pxh = h / data.getFields();
 		xOff = (w - pxw * data.getFields()) / 2;
@@ -285,6 +300,12 @@ public class FieldPanel extends JPanel {
 					g.setColor(ft.getInverseColor());
 					g.drawLine(xOff + pxw * i, yOff + pxh * n, xOff + pxw * (i + 1), yOff + pxh * (n + 1));
 					g.drawLine(xOff + pxw * (i + 1), yOff + pxh * n, xOff + pxw * i, yOff + pxh * (n + 1));
+				}
+				// Paint street
+				if (data.get(i, n).containsStreet) {
+					g.setColor(Color.BLACK);
+					// x,y,w,h,start in degree, part in degree
+					g.fillArc(xOff + pxw * i + pxw / 4, yOff + pxh * n + pxh / 4, pxw / 2, pxh / 2, 0, 360);
 				}
 			}
 	}
@@ -359,6 +380,9 @@ public class FieldPanel extends JPanel {
 		placeBorder();
 		placeRandomSpecial();
 		fillEmptyTerrains(effectiveTreeDeepth, allowedTerrainTrees);
+
+		generateStreets();
+
 		// no comment
 		repaint();
 	}
@@ -473,7 +497,9 @@ public class FieldPanel extends JPanel {
 
 	private void fillSingleTerrainManuall(final int x, final int y, int mouseX, int mouseY) {
 		JPopupMenu jpm = new JPopupMenu();
-		List<TerrainModel> ltm = getAllowedTerrains(x, y);
+		Map<String, TreeElement> allowedTerrainTrees = getAllowedTerrainTrees();
+		Map<String, Integer> effectivTreeDeepth = getEffectivTreeDeepth(allowedTerrainTrees);
+		List<TerrainModel> ltm = getAllowedTerrains(x, y, effectivTreeDeepth, allowedTerrainTrees);
 		JMenu allowedTypes = new JMenu("Allowed Terrain types");
 		for (final TerrainModel tm : ltm) {
 			JMenuItem jmi = new JMenuItem(tm.getName());
@@ -507,7 +533,7 @@ public class FieldPanel extends JPanel {
 		JMenu allowedObjects = new JMenu("Allowed Objects");
 		final FieldObject areaType = data.get(x, y);
 		for (final ObjectModel om : envoirment.objects)
-			if (om.isChoosen()&&(areaType.getArea() == null || om.isAllowedTo(areaType.getArea().getName())))
+			if (om.isChoosen() && (areaType.getArea() == null || om.isAllowedTo(areaType.getArea().getName())))
 
 			{
 				JMenuItem jmi = new JMenuItem(om.getName());
@@ -551,43 +577,161 @@ public class FieldPanel extends JPanel {
 	}
 
 	/**
-	 * Caclulates all Terrais that are allowed (at the moment) for this
-	 * coordinates
+	 * Sets a Set of streets
+	 */
+	private void generateStreets() {
+		// Generate a number of street elements left
+		int[] streetNetSizeDefaults = { //
+				data.getFields(), // Nearly no streets for a unknown terrain
+				data.getFields() * 10, //
+				data.getFields() * 20, //
+				data.getFields() * 40// A // huge // net // of // streets
+		};
+		Random r = new Random();
+		int streetNetSize = streetNetSizeDefaults[r.nextInt(streetNetSizeDefaults.length)];
+		while (streetNetSize > 0)// Build all Streets
+		{
+			int dir = r.nextInt(4);// One of the four directions
+			int length = r.nextInt(streetNetSize + 1);
+			streetNetSize -= length;
+			switch (dir) {
+			case NORTH:
+				nextStreetElementFrom(r.nextInt(data.getFields()), 0, length,SOUTH);
+				break;
+			case SOUTH:
+				nextStreetElementFrom(r.nextInt(data.getFields()), data.getFields() - 1, length,NORTH);
+				break;
+			case EAST:
+				nextStreetElementFrom(data.getFields() - 1, r.nextInt(data.getFields()), length,WEST);
+				break;
+			case WEST:
+				nextStreetElementFrom(0, r.nextInt(data.getFields() - 1), length,EAST);
+				break;
+			}
+		}
+	}
+
+	/**
+	 * sets the next element of a street (from origin x,y), maybe creates a
+	 * crossing
 	 * 
 	 * @param x
 	 * @param y
-	 * @return
+	 * @param left
+	 *            elemetns left to set in a row
+	 * @param ahead direction the former street came from, to this field about 50% proapability to go there again
 	 */
-	@Deprecated
-	private List<TerrainModel> getAllowedTerrains(int x, int y) {
-		List<TerrainModel> res = new ArrayList<>();
-		if (x < 1 || y < 1 || x > data.getFields() - 1 || y > data.getFields() - 1)
-			return res;
-		// Adding all possible Terrais to a list
-		for (TerrainModel tm : envoirment.fields) {
-			if (tm.isDestination())
-				continue;
-			if (tm.getAreas() > 0)
-				continue;
-			if (tm.isChoosen())
-				res.add(tm);
+	private void nextStreetElementFrom(int x, int y, int left, int ahead) {
+		if (left <= 0 || x < 0 || y < 0 || x >= data.getFields() || y >= data.getFields())
+			return;
+		if (!data.get(x, y).getArea().isStreet())
+			return;// Do nothing if a street is not allowed in this field
+		data.get(x, y).containsStreet = true;
+		Random r = new Random();
+		int 		dir= r.nextInt(100)>75?r.nextInt(8):ahead;
+		
+		switch (dir) {
+		case NORTH:
+			y--;
+			break;
+		case SOUTH:
+			y++;
+			break;
+		case EAST:
+			x++;
+			break;
+		case WEST:
+			x--;
+			break;
+		case NORTH_WEST:
+			y--;
+			x--;
+			break;
+		case NORTH_EAST:
+			y--;
+			x++;
+			break;
+		case SOUTH_EAST:
+			y++;
+			x++;
+			break;
+		case SOUTH_WEST:
+			y++;
+			x--;
+			break;
 		}
-		// Remove Terrains not allowd by surrondings
-		List<TerrainModel> del = new ArrayList<>();
-
-		for (TerrainModel tm : res) {
-			for (int i = 0; i < 4; i++) {
-				TerrainModel tmp;
-				tmp = getArea(i, x, y);
-				if (tmp == null)
-					continue;
-				if (!tmp.isAdjectableTo(tm.getName()) && !tmp.isDestination())
-					del.add(tm);
-			}
-		}
-		res.removeAll(del);
-		return res;
+		nextStreetElementFrom(x, y, left - 1,dir);
 	}
+
+	private boolean streetAllowed(int x, int y) {
+		// Is a street allowed at all
+		if (!data.get(x, y).getArea().isStreet())
+			return false;
+		// Check if this would be a crossing, and a crossing isn't forbidden
+		int cnt = countStreetsArround(x, y);
+		if (cnt > 1 && !data.get(x, y).getArea().isStreetCrossing())
+			return false;
+		return true;
+	}
+
+	private int countStreetsArround(int x, int y) {
+		int cnt = 0;
+		for (int i = -1; i <= 1; i++)
+			for (int n = -1; n <= 1; n++) {
+				int nx = Math.min(data.getFields() - 1, Math.max(0, x + i));
+				int ny = Math.min(data.getFields() - 1, Math.max(0, y + n));
+				if (data.get(nx, ny).containsStreet)
+					cnt++;
+			}
+		return cnt;
+	}
+
+	private void regenerateStreets() {
+		for (int i = 0; i < data.getFields(); i++)
+			for (int n = 0; n < data.getFields(); n++)
+				data.get(i, n).containsStreet = false;
+		generateStreets();
+	}
+
+	// /**
+	// * Caclulates all Terrais that are allowed (at the moment) for this
+	// * coordinates
+	// *
+	// * @param x
+	// * @param y
+	// * @return
+	// */
+	// @Deprecated
+	// private List<TerrainModel> getAllowedTerrains(int x, int y) {
+	// List<TerrainModel> res = new ArrayList<>();
+	// if (x < 1 || y < 1 || x > data.getFields() - 1 || y > data.getFields() -
+	// 1)
+	// return res;
+	// // Adding all possible Terrais to a list
+	// for (TerrainModel tm : envoirment.fields) {
+	// if (tm.isDestination())
+	// continue;
+	// if (tm.getAreas() > 0)
+	// continue;
+	// if (tm.isChoosen())
+	// res.add(tm);
+	// }
+	// // Remove Terrains not allowd by surrondings
+	// List<TerrainModel> del = new ArrayList<>();
+	//
+	// for (TerrainModel tm : res) {
+	// for (int i = 0; i < 4; i++) {
+	// TerrainModel tmp;
+	// tmp = getArea(i, x, y);
+	// if (tmp == null)
+	// continue;
+	// if (!tmp.isAdjectableTo(tm.getName()) && !tmp.isDestination())
+	// del.add(tm);
+	// }
+	// }
+	// res.removeAll(del);
+	// return res;
+	// }
 
 	/**
 	 * Gets a List of all allowed Terrains for this field, effectiveDeep and mst
@@ -809,16 +953,16 @@ public class FieldPanel extends JPanel {
 
 	}
 
-	@Deprecated
-	private boolean contains(List<TerrainModel> ltm, TerrainModel tm) {
-		if (ltm.contains(tm))
-			return true;
-		for (TerrainModel t : ltm) {
-			if (t.getName().equals(tm.getName()))
-				return true;
-		}
-		return false;
-	}
+	// @Deprecated
+	// private boolean contains(List<TerrainModel> ltm, TerrainModel tm) {
+	// if (ltm.contains(tm))
+	// return true;
+	// for (TerrainModel t : ltm) {
+	// if (t.getName().equals(tm.getName()))
+	// return true;
+	// }
+	// return false;
+	// }
 
 	private boolean contains(List<TerrainModel> ltm, String terrainName) {
 		for (TerrainModel tm : ltm)
@@ -936,5 +1080,15 @@ public class FieldPanel extends JPanel {
 			return null;
 		}
 		return null;
+	}
+
+	/**
+	 * If true picture fits to screen
+	 * 
+	 * @param b
+	 */
+	public void setFit(boolean b) {
+		fitToPanel = b;
+		repaint();
 	}
 }

@@ -15,15 +15,14 @@ import chaseGenerator.models.TerrainModel;
 @XmlRootElement
 public class FieldObject implements Serializable {
 	private TerrainModel area;
-	private TrapType trap;
 	@XmlElement
 	public int survival;
 	@XmlElement
 	public int perception;
-	@XmlElementWrapper
-	public AbilitySG[][] nextField = new AbilitySG[4][2];
 	@XmlElement
 	public List<String> objects;
+	@XmlElement
+	public boolean containsStreet;
 
 	public FieldObject() {
 		objects = new ArrayList<>();
@@ -35,14 +34,6 @@ public class FieldObject implements Serializable {
 
 	public void setArea(TerrainModel area) {
 		this.area = area;
-	}
-
-	public void setTrap(TrapType tt) {
-		trap = tt;
-	}
-
-	public TrapType getTrap() {
-		return trap;
 	}
 
 	public void addObject(String str) {
